@@ -7,6 +7,7 @@ type Ammo = {
   clip: number;
   clipMax: number;
   reserve: number;
+  reloading: boolean;
 };
 
 export function AmmoReadout() {
@@ -15,22 +16,20 @@ export function AmmoReadout() {
     clip: 24,
     clipMax: 24,
     reserve: 0,
+    reloading: false,
   });
 
   useEffect(() => {
     const onUpdate = (e: Ammo) => setAmmo(e);
+    const onSwitch = (e: { weaponId: string; unlocked: string[] }) =>
+      setAmmo((prev) => ({ ...prev, weaponId: e.weaponId }));
     bus.on('AMMO_UPDATED', onUpdate);
-    return () => bus.off('AMMO_UPDATED', onUpdate);
+    bus.on('WEAPON_SWITCHED', onSwitch);
+    return () => {
+      bus.off('AMMO_UPDATED', onUpdate);
+      bus.off('WEAPON_SWITCHED', onSwitch);
+    };
   }, []);
-
-  // Reload state does not currently ride on AMMO_UPDATED's payload shape,
-  // so it is inferred: a clip that hasn't moved while the reserve keeps
-  // climbing is ambiguous, so instead this simply mirrors the low-clip
-  // visual state and the readout leans on the label text rather than a
-  // separate boolean. Kept intentionally simple for this plan; a dedicated
-  // reload flag can be added to AMMO_UPDATED's payload later without
-  // breaking this component.
-  const reloading = ammo.clip === 0 && ammo.reserve > 0;
 
   return (
     <div className="flex flex-col items-end gap-1 text-right">
@@ -41,7 +40,7 @@ export function AmmoReadout() {
         {ammo.clip} / {ammo.clipMax}
       </span>
       <span className="text-xs text-white/50">reserve {ammo.reserve}</span>
-      {reloading && (
+      {ammo.reloading && (
         <span className="text-xs tracking-widest text-grace uppercase">
           Reloading
         </span>

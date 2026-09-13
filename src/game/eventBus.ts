@@ -28,6 +28,7 @@ export type GameEvents = {
     clip: number;
     clipMax: number;
     reserve: number;
+    reloading: boolean;
   };
   WEAPON_SWITCHED: { weaponId: string; unlocked: string[] };
   TREE_GROWTH_TICK: {

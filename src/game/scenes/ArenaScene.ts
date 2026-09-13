@@ -343,6 +343,7 @@ export class ArenaScene extends Phaser.Scene {
       clip,
       clipMax,
       reserve,
+      reloading,
     });
 
     this.#emitAegisStatus(this.time.now);
@@ -734,6 +735,7 @@ export class ArenaScene extends Phaser.Scene {
         clip,
         clipMax,
         reserve: displayReserve,
+        reloading,
       });
     }
 
