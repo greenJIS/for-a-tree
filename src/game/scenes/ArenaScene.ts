@@ -222,13 +222,35 @@ export class ArenaScene extends Phaser.Scene {
     this.input.on('pointerdown', () => this.#audio.resume());
     this.input.keyboard?.on('keydown', () => this.#audio.resume());
 
-    this.add.tileSprite(
-      ARENA.width / 2,
-      ARENA.height / 2,
-      ARENA.width,
-      ARENA.height,
-      'ground',
-    );
+    this.add
+      .tileSprite(ARENA.width / 2, ARENA.height / 2, ARENA.width, ARENA.height, 'ground')
+      .setTint(0xb0a68f);
+
+    if (!this.textures.exists('ground-vignette')) {
+      const vignetteTexture = this.textures.createCanvas(
+        'ground-vignette',
+        ARENA.width,
+        ARENA.height,
+      );
+      if (vignetteTexture) {
+        const ctx = vignetteTexture.context;
+        const radius = Math.hypot(ARENA.width / 2, ARENA.height / 2);
+        const gradient = ctx.createRadialGradient(
+          ARENA.width / 2,
+          ARENA.height / 2,
+          0,
+          ARENA.width / 2,
+          ARENA.height / 2,
+          radius,
+        );
+        gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+        gradient.addColorStop(1, 'rgba(0, 0, 0, 0.6)');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, ARENA.width, ARENA.height);
+        vignetteTexture.refresh();
+      }
+    }
+    this.add.image(ARENA.width / 2, ARENA.height / 2, 'ground-vignette');
 
     // Barren ring first, so the bright aura ring draws over it.
     // Delta spec 7.3.
