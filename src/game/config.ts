@@ -82,5 +82,78 @@ export const SWARMER = {
   radius: 18,
 } as const;
 
+/** Universal per-enemy melee cadence. SRS 3.1 — applies to every mutant, not just the Swarmer. */
+export const MELEE_COOLDOWN_MS = 800;
+
+/** E-02 Carapace Brute. SRS 4.3. */
+export const BRUTE = {
+  speed: 75,
+  hp: 120,
+  melee: 20,
+  threat: 4,
+  ballisticReduction: 0.25,
+  displaySize: 48,
+} as const;
+
+/** E-03 Bio-Detonator. SRS 4.3. */
+export const DETONATOR = {
+  speed: 130,
+  hp: 35,
+  melee: 40,
+  threat: 2,
+  lockRangePx: 45,
+  telegraphMs: 600,
+  explosionRadiusPx: 70,
+  displaySize: 40,
+} as const;
+
+/** Spawn director. SRS 5.1. */
+export const DIRECTOR = {
+  baseThreat: 3,
+  threatPerSec: 1 / 6,
+  maxSpawnsPerSecond: 2,
+  unlockAtSec: {
+    swarmer: 0,
+    detonator: 45,
+    brute: 90,
+  },
+  hpRampPer60s: 0.1,
+  dmgRampPer60s: 0.06,
+} as const;
+
+/** Pity-weighted drop system. SRS 3.5. */
+export const PITY = {
+  baseProbability: 0.2,
+  probabilityPerMiss: 0.15,
+  tierWeights: {
+    silt: 60,
+    nitrate: 30,
+    phyto: 10,
+  },
+} as const;
+
+/** Maturity granted per catalyst tier on delivery. SRS 4.4. */
+export const CATALYST_VALUE = {
+  silt: 5,
+  nitrate: 10,
+  phyto: 20,
+} as const;
+
+/** Canister ejection, magnet, and lifetime. SRS 3.6, clamped by delta spec 4's barren zone. */
+export const CANISTER = {
+  ejectSpeedMin: 450,
+  ejectSpeedMax: 600,
+  drag: 300,
+  nearTreeThresholdPx: 40,
+  nearTreeEjectSpeedMin: 150,
+  nearTreeEjectSpeedMax: 250,
+  lifetimeMs: 15000,
+  despawnWarnMs: 4000,
+  despawnFlashHz: 8,
+  magnetRadius: 90,
+  magnetPullSpeed: 500,
+  displaySize: 24,
+} as const;
+
 /** High-frequency bus events emit at 10 Hz. SRS 2.2. */
 export const TICK_INTERVAL_MS = 100;
