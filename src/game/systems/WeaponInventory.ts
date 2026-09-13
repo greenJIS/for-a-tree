@@ -46,7 +46,7 @@ export class WeaponInventory {
   };
 
   readonly #reserves: Record<WeaponId, number> = {
-    carbine: 0,
+    carbine: CARBINE.reserveCap,
     scatter: 0,
     rail: 0,
   };
