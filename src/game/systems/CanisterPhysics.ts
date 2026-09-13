@@ -4,6 +4,10 @@
  * tree than barrenRadius, or catalysts would cash in for free without a
  * carry step.
  *
+ * barrenRadius is derived from the caller's live aura radius (not a fixed
+ * constant) so that Wider Canopy moves the barren boundary outward with the
+ * aura, per delta spec 4.
+ *
  * Rather than tune an Arcade Physics drag body to stop at an exact point,
  * this computes the natural drag-stopping distance analytically
  * (travel = speed^2 / (2 * drag)) and clamps it, then hands the caller a
@@ -12,7 +16,7 @@
  *
  * Pure TypeScript by design -- no Phaser import -- so it is unit-testable.
  */
-import { AURA_RADIUS_BASE, BARREN_MARGIN, CANISTER } from '../config';
+import { BARREN_MARGIN, CANISTER } from '../config';
 
 export type CanisterRest = {
   x: number;
@@ -21,16 +25,16 @@ export type CanisterRest = {
   durationMs: number;
 };
 
-const BARREN_RADIUS = AURA_RADIUS_BASE + BARREN_MARGIN;
-
 export function computeCanisterRest(
   killX: number,
   killY: number,
   treeX: number,
   treeY: number,
+  auraRadius: number,
   rng: () => number = Math.random,
 ): CanisterRest {
   const homeDist = Math.hypot(treeX - killX, treeY - killY);
+  const barrenRadius = auraRadius + BARREN_MARGIN;
 
   if (homeDist < CANISTER.nearTreeThresholdPx) {
     const angle = rng() * Math.PI * 2;
@@ -53,7 +57,7 @@ export function computeCanisterRest(
     CANISTER.ejectSpeedMin +
     rng() * (CANISTER.ejectSpeedMax - CANISTER.ejectSpeedMin);
   const naturalTravel = (speed * speed) / (2 * CANISTER.drag);
-  const maxAllowedTravel = Math.max(0, homeDist - BARREN_RADIUS);
+  const maxAllowedTravel = Math.max(0, homeDist - barrenRadius);
   const travelPx = Math.min(naturalTravel, maxAllowedTravel);
 
   return {

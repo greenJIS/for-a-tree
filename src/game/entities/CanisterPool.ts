@@ -45,11 +45,12 @@ export class CanisterPool {
     treeX: number,
     treeY: number,
     tier: CatalystTier,
+    auraRadius: number,
   ): void {
     const canister: unknown = this.group.getFirstDead(false);
     if (!(canister instanceof Phaser.GameObjects.Image)) return;
 
-    const rest = computeCanisterRest(killX, killY, treeX, treeY);
+    const rest = computeCanisterRest(killX, killY, treeX, treeY, auraRadius);
 
     canister.setActive(true);
     canister.setVisible(true);

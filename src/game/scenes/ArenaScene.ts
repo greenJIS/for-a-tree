@@ -58,6 +58,7 @@ export class ArenaScene extends Phaser.Scene {
   #tether = new TetherSystem();
   #tree = new TreeSystem();
   #auraSprite!: Phaser.GameObjects.Image;
+  #barrenSprite!: Phaser.GameObjects.Image;
   #treeSprite!: Phaser.GameObjects.Image;
   #lastTetherState: TetherState = 'tethered';
   #msSinceTick = 0;
@@ -195,18 +196,18 @@ export class ArenaScene extends Phaser.Scene {
 
     // Barren ring first, so the bright aura ring draws over it.
     // Delta spec 7.3.
-    const barren = this.add.image(
+    this.#barrenSprite = this.add.image(
       TREE_POS.x,
       TREE_POS.y,
       'sheet',
       FRAME.auraRing,
     );
-    barren.setDisplaySize(
-      (AURA_RADIUS_BASE + BARREN_MARGIN) * 2,
-      (AURA_RADIUS_BASE + BARREN_MARGIN) * 2,
+    this.#barrenSprite.setDisplaySize(
+      (this.#auraRadius + BARREN_MARGIN) * 2,
+      (this.#auraRadius + BARREN_MARGIN) * 2,
     );
-    barren.setAlpha(0.25);
-    barren.setTint(0x6b7280);
+    this.#barrenSprite.setAlpha(0.25);
+    this.#barrenSprite.setTint(0x6b7280);
 
     this.#auraSprite = this.add.image(
       TREE_POS.x,
@@ -405,6 +406,10 @@ export class ArenaScene extends Phaser.Scene {
         this.#auraSprite.setDisplaySize(
           this.#auraRadius * 2,
           this.#auraRadius * 2,
+        );
+        this.#barrenSprite.setDisplaySize(
+          (this.#auraRadius + BARREN_MARGIN) * 2,
+          (this.#auraRadius + BARREN_MARGIN) * 2,
         );
       } else if (cardId === 'vacuum-coils') {
         bus.emit('CATALYSTS_CARRIED', {
@@ -821,7 +826,7 @@ export class ArenaScene extends Phaser.Scene {
    * burn the player's accumulated drop odds.
    */
   #handleKillDrop(killX: number, killY: number): void {
-    const barrenRadius = AURA_RADIUS_BASE + BARREN_MARGIN;
+    const barrenRadius = this.#auraRadius + BARREN_MARGIN;
     const homeDist = Phaser.Math.Distance.Between(
       killX,
       killY,
@@ -833,7 +838,14 @@ export class ArenaScene extends Phaser.Scene {
     const tier = this.#pity.rollOnKill();
     if (!tier) return;
 
-    this.#canisters.eject(killX, killY, TREE_POS.x, TREE_POS.y, tier);
+    this.#canisters.eject(
+      killX,
+      killY,
+      TREE_POS.x,
+      TREE_POS.y,
+      tier,
+      this.#auraRadius,
+    );
   }
 
   /**
