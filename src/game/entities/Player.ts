@@ -31,6 +31,10 @@ export class Player {
     this.sprite.setCollideWorldBounds(true);
     scene.physics.world.setBounds(0, 0, ARENA.width, ARENA.height);
 
+    if (this.sprite.body instanceof Phaser.Physics.Arcade.Body) {
+      this.sprite.body.pushable = false;
+    }
+
     const keyboard = scene.input.keyboard;
     if (!keyboard) throw new Error('Keyboard input is unavailable');
 
