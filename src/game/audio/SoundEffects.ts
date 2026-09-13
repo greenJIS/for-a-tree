@@ -17,6 +17,7 @@ export type SoundEffectName =
   | 'deliver'
   | 'decayWarn'
   | 'decay'
+  | 'growthStalled'
   | 'generation'
   | 'snd_carbine_fire'
   | 'snd_shotgun_fire'
@@ -26,6 +27,7 @@ export type SoundEffectName =
   | 'snd_pickup'
   | 'snd_deliver'
   | 'snd_decay_warn'
+  | 'snd_growth_stalled'
   | 'snd_generation';
 
 export class SoundEffects {
@@ -405,6 +407,32 @@ export class SoundEffects {
   }
 
   /**
+   * Growth Stalled: a single flat blip marking the ceiling crossing
+   * (400Hz triangle, 0.12s) -- distinct from decayWarn's descending drone.
+   */
+  growthStalled(): void {
+    const ctx = this.#init();
+    if (!ctx || !this.#masterGain) return;
+
+    const t = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(400, t);
+
+    gain.gain.setValueAtTime(0.001, t);
+    gain.gain.linearRampToValueAtTime(0.25, t + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+
+    osc.connect(gain);
+    gain.connect(this.#masterGain);
+
+    osc.start(t);
+    osc.stop(t + 0.12);
+  }
+
+  /**
    * Generation Fanfare: full bloom fanfare (triumphant chords/arpeggios, 0.6s).
    */
   generation(): void {
@@ -481,6 +509,10 @@ export class SoundEffects {
       case 'decay':
       case 'snd_decay_warn':
         this.decayWarn();
+        break;
+      case 'growthStalled':
+      case 'snd_growth_stalled':
+        this.growthStalled();
         break;
       case 'generation':
       case 'snd_generation':

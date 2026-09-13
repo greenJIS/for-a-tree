@@ -749,6 +749,7 @@ export class ArenaScene extends Phaser.Scene {
       this.#triggerGeneration(result.generation);
     }
     if (result.stalledCrossing) {
+      this.#audio.growthStalled();
       bus.emit('GROWTH_STALLED', { ceilingPct: GROWTH_CEILING });
     }
 
