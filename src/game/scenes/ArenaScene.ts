@@ -17,10 +17,12 @@ import {
 } from '../config';
 import { FRAME } from '../frames';
 import { BulletPool } from '../entities/BulletPool';
+import { CanisterPool } from '../entities/CanisterPool';
 import { EnemyPool } from '../entities/EnemyPool';
 import { Player } from '../entities/Player';
 import { AmmoSystem } from '../systems/AmmoSystem';
 import type { AmmoState } from '../systems/AmmoSystem';
+import { PityDropSystem } from '../systems/PityDropSystem';
 import { SpawnDirector, type MutantKind } from '../systems/SpawnDirector';
 import { TetherSystem } from '../systems/TetherSystem';
 import { TreeSystem } from '../systems/TreeSystem';
@@ -43,6 +45,8 @@ export class ArenaScene extends Phaser.Scene {
   #lastEmittedAmmo: AmmoState | null = null;
   #reloadKey!: Phaser.Input.Keyboard.Key;
   #enemies!: EnemyPool;
+  #canisters!: CanisterPool;
+  #pity = new PityDropSystem();
   #hp: number = PLAYER.maxHp;
   #invulnUntilMs = 0;
   #kills = 0;
@@ -101,6 +105,7 @@ export class ArenaScene extends Phaser.Scene {
     this.#player = new Player(this, TREE_POS.x, TREE_POS.y);
     this.#bullets = new BulletPool(this, 200);
     this.#enemies = new EnemyPool(this, 60);
+    this.#canisters = new CanisterPool(this, 30);
 
     const keyboard = this.input.keyboard;
     if (keyboard) {
@@ -124,8 +129,11 @@ export class ArenaScene extends Phaser.Scene {
           CARBINE.damage * (1 - EnemyPool.ballisticReduction(enemy));
         const remaining = EnemyPool.hp(enemy) - damage;
         if (remaining <= 0) {
+          const killX = enemy.x;
+          const killY = enemy.y;
           EnemyPool.kill(enemy);
           this.#kills += 1;
+          this.#handleKillDrop(killX, killY);
           return;
         }
 
@@ -185,6 +193,7 @@ export class ArenaScene extends Phaser.Scene {
 
     this.#bullets.cull();
     this.#enemies.pursue(this.#player.x, this.#player.y);
+    this.#canisters.update(this.#player.x, this.#player.y);
 
     const dist = Phaser.Math.Distance.Between(
       this.#player.x,
@@ -305,6 +314,28 @@ export class ArenaScene extends Phaser.Scene {
     });
   }
 
+  /**
+   * Barren-zone eligibility, then pity, then ejection. Delta spec 4: a
+   * kill inside barrenRadius produces no canister at all, and does NOT
+   * advance the pity counter -- defending the tree must never silently
+   * burn the player's accumulated drop odds.
+   */
+  #handleKillDrop(killX: number, killY: number): void {
+    const barrenRadius = AURA_RADIUS_BASE + BARREN_MARGIN;
+    const homeDist = Phaser.Math.Distance.Between(
+      killX,
+      killY,
+      TREE_POS.x,
+      TREE_POS.y,
+    );
+    if (homeDist < barrenRadius) return;
+
+    const tier = this.#pity.rollOnKill();
+    if (!tier) return;
+
+    this.#canisters.eject(killX, killY, TREE_POS.x, TREE_POS.y, tier);
+  }
+
   #spawnAtEdge(kind: MutantKind): void {
     const inset = 24;
     for (let attempt = 0; attempt < 8; attempt += 1) {
@@ -385,6 +416,7 @@ export class ArenaScene extends Phaser.Scene {
     const cx = detonator.x;
     const cy = detonator.y;
 
+    this.#handleKillDrop(cx, cy);
     EnemyPool.kill(detonator);
 
     if (
@@ -403,6 +435,7 @@ export class ArenaScene extends Phaser.Scene {
       ) {
         const remaining = EnemyPool.hp(child) - damage;
         if (remaining <= 0) {
+          this.#handleKillDrop(child.x, child.y);
           EnemyPool.kill(child);
         } else {
           EnemyPool.setHp(child, remaining);
