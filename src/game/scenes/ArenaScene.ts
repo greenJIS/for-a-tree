@@ -8,6 +8,7 @@ import {
   AURA_RADIUS_BASE,
   BARREN_MARGIN,
   CARBINE,
+  DETONATOR,
   GROWTH_CEILING,
   MELEE_COOLDOWN_MS,
   PLAYER,
@@ -168,6 +169,8 @@ export class ArenaScene extends Phaser.Scene {
       });
     }
 
+    this.#updateDetonators();
+
     this.#player.update();
 
     const pointer = this.input.activePointer;
@@ -294,5 +297,91 @@ export class ArenaScene extends Phaser.Scene {
         return;
       }
     }
+  }
+
+  /**
+   * Bio-Detonator telegraph and explosion. SRS 4.3: on closing within
+   * lockRangePx of the player it locks in place, flashes white for
+   * telegraphMs, then explodes for AoE damage against the player and any
+   * other enemy within explosionRadiusPx -- including other Detonators,
+   * which makes baiting them into a crowd a real tactic. Killing it during
+   * the telegraph (a bullet overlap disables its body) naturally prevents
+   * the explosion, since a dead enemy is skipped by every check below.
+   */
+  #updateDetonators(): void {
+    const now = this.time.now;
+
+    for (const child of this.#enemies.group.getChildren()) {
+      if (!isArcadeImage(child) || !child.active) continue;
+      if (EnemyPool.kind(child) !== 'detonator') continue;
+
+      const lockedUntilMs = EnemyPool.lockedUntilMs(child);
+
+      if (lockedUntilMs === 0) {
+        const distToPlayer = Phaser.Math.Distance.Between(
+          child.x,
+          child.y,
+          this.#player.x,
+          this.#player.y,
+        );
+        if (distToPlayer <= DETONATOR.lockRangePx) {
+          EnemyPool.setLockedUntilMs(child, now + DETONATOR.telegraphMs);
+          child.setVelocity(0, 0);
+          this.tweens.add({
+            targets: child,
+            alpha: 0.3,
+            duration: 120,
+            yoyo: true,
+            repeat: Math.floor(DETONATOR.telegraphMs / 240),
+          });
+        }
+        continue;
+      }
+
+      if (now < lockedUntilMs) continue;
+
+      this.#explodeDetonator(child);
+    }
+  }
+
+  #explodeDetonator(detonator: Phaser.Physics.Arcade.Image): void {
+    const damage = EnemyPool.melee(detonator);
+    const cx = detonator.x;
+    const cy = detonator.y;
+
+    EnemyPool.kill(detonator);
+
+    if (
+      Phaser.Math.Distance.Between(cx, cy, this.#player.x, this.#player.y) <=
+      DETONATOR.explosionRadiusPx
+    ) {
+      this.#takeExplosionDamage(damage);
+    }
+
+    for (const child of this.#enemies.group.getChildren()) {
+      if (!isArcadeImage(child) || !child.active) continue;
+      if (child === detonator) continue;
+      if (
+        Phaser.Math.Distance.Between(cx, cy, child.x, child.y) <=
+        DETONATOR.explosionRadiusPx
+      ) {
+        const remaining = EnemyPool.hp(child) - damage;
+        if (remaining <= 0) {
+          EnemyPool.kill(child);
+        } else {
+          EnemyPool.setHp(child, remaining);
+        }
+      }
+    }
+  }
+
+  #takeExplosionDamage(damage: number): void {
+    if (this.#over) return;
+
+    this.#hp = Math.max(0, this.#hp - damage);
+    bus.emit('PLAYER_HP_CHANGED', { current: this.#hp, max: PLAYER.maxHp });
+    this.cameras.main.shake(120, 0.006);
+
+    if (this.#hp === 0) this.#endRun();
   }
 }
