@@ -4,6 +4,7 @@
  */
 import Phaser from 'phaser';
 import {
+  AEGIS,
   ARENA,
   AURA_RADIUS_BASE,
   BARREN_MARGIN,
@@ -21,6 +22,7 @@ import { BulletPool } from '../entities/BulletPool';
 import { CanisterPool } from '../entities/CanisterPool';
 import { EnemyPool } from '../entities/EnemyPool';
 import { Player } from '../entities/Player';
+import { AegisSystem, type AegisStatus } from '../systems/AegisSystem';
 import { AmmoSystem } from '../systems/AmmoSystem';
 import type { AmmoState } from '../systems/AmmoSystem';
 import { CarrySystem } from '../systems/CarrySystem';
@@ -46,6 +48,11 @@ export class ArenaScene extends Phaser.Scene {
   #ammo = new AmmoSystem();
   #lastEmittedAmmo: AmmoState | null = null;
   #reloadKey?: Phaser.Input.Keyboard.Key;
+  #aegis = new AegisSystem();
+  #aegisSprite!: Phaser.GameObjects.Image;
+  #spaceKey?: Phaser.Input.Keyboard.Key;
+  #lastEmittedAegis: AegisStatus | null = null;
+  #msSinceAegisTick = 0;
   #enemies!: EnemyPool;
   #canisters!: CanisterPool;
   #carry = new CarrySystem();
@@ -106,6 +113,17 @@ export class ArenaScene extends Phaser.Scene {
     this.#treeSprite.setDisplaySize(64, 64);
 
     this.#player = new Player(this, TREE_POS.x, TREE_POS.y);
+    this.#aegisSprite = this.add.image(
+      this.#player.x,
+      this.#player.y,
+      'sheet',
+      FRAME.aegisDome,
+    );
+    this.#aegisSprite.setDisplaySize(64, 64);
+    this.#aegisSprite.setDepth(5);
+    this.#aegisSprite.setBlendMode(Phaser.BlendModes.ADD);
+    this.#aegisSprite.setVisible(false);
+
     this.#bullets = new BulletPool(this, 200);
     this.#enemies = new EnemyPool(this, 60);
     this.#canisters = new CanisterPool(this, 30);
@@ -113,6 +131,8 @@ export class ArenaScene extends Phaser.Scene {
     const keyboard = this.input.keyboard;
     if (keyboard) {
       this.#reloadKey = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
+      this.#spaceKey = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+      keyboard.addCapture([Phaser.Input.Keyboard.KeyCodes.SPACE]);
     }
 
     this.#startedAtMs = this.time.now;
@@ -159,6 +179,10 @@ export class ArenaScene extends Phaser.Scene {
       current: this.#hp,
       max: PLAYER.maxHp,
     });
+
+    const initialAegis = this.#aegis.status(this.time.now, AEGIS.capacityBase);
+    this.#lastEmittedAegis = initialAegis;
+    bus.emit('AEGIS_STATUS', initialAegis);
   }
 
   override update(_time: number, delta: number): void {
@@ -166,6 +190,34 @@ export class ArenaScene extends Phaser.Scene {
 
     const dtSec = delta / 1000;
     this.#elapsedSec += dtSec;
+
+    if (this.#spaceKey && Phaser.Input.Keyboard.JustDown(this.#spaceKey)) {
+      this.#aegis.tryActivate(this.time.now);
+    }
+
+    const isAegisActive = this.#aegis.isActive(this.time.now);
+    this.#aegisSprite.setPosition(this.#player.x, this.#player.y);
+    this.#aegisSprite.rotation += dtSec * 1.5;
+    this.#aegisSprite.setVisible(isAegisActive);
+
+    this.#msSinceAegisTick += delta;
+    const aegisStatus = this.#aegis.status(this.time.now, AEGIS.capacityBase);
+    const aegisChanged =
+      !this.#lastEmittedAegis ||
+      this.#lastEmittedAegis.charges !== aegisStatus.charges ||
+      this.#lastEmittedAegis.capacity !== aegisStatus.capacity ||
+      this.#lastEmittedAegis.activeRemainingMs > 0 !==
+        aegisStatus.activeRemainingMs > 0;
+
+    if (
+      aegisChanged ||
+      (aegisStatus.activeRemainingMs > 0 &&
+        this.#msSinceAegisTick >= TICK_INTERVAL_MS)
+    ) {
+      this.#msSinceAegisTick = 0;
+      this.#lastEmittedAegis = aegisStatus;
+      bus.emit('AEGIS_STATUS', aegisStatus);
+    }
 
     let aliveThreat = 0;
     for (const child of this.#enemies.group.getChildren()) {
@@ -197,6 +249,45 @@ export class ArenaScene extends Phaser.Scene {
     this.#bullets.cull();
     this.#enemies.pursue(this.#player.x, this.#player.y);
 
+    if (isAegisActive) {
+      const px = this.#player.x;
+      const py = this.#player.y;
+      const pBody = this.#player.sprite.body;
+      for (const child of this.#enemies.group.getChildren()) {
+        if (!isArcadeImage(child) || !child.active) continue;
+
+        const dist = Phaser.Math.Distance.Between(child.x, child.y, px, py);
+        const eBody = child.body;
+        const isContact =
+          dist <= 32 ||
+          (pBody &&
+            eBody &&
+            pBody.right >= eBody.x &&
+            pBody.x <= eBody.right &&
+            pBody.bottom >= eBody.y &&
+            pBody.y <= eBody.bottom);
+
+        if (!isContact) continue;
+
+        const remaining = EnemyPool.hp(child) - AEGIS.retaliationDps * dtSec;
+        if (remaining <= 0) {
+          const killX = child.x;
+          const killY = child.y;
+          EnemyPool.kill(child);
+          this.#kills += 1;
+          this.#handleKillDrop(killX, killY);
+          continue;
+        }
+
+        EnemyPool.setHp(child, remaining);
+        const angle = Phaser.Math.Angle.Between(px, py, child.x, child.y);
+        child.setVelocity(
+          Math.cos(angle) * AEGIS.knockback,
+          Math.sin(angle) * AEGIS.knockback,
+        );
+      }
+    }
+
     const dist = Phaser.Math.Distance.Between(
       this.#player.x,
       this.#player.y,
@@ -220,6 +311,9 @@ export class ArenaScene extends Phaser.Scene {
     if (state === 'tethered' && this.#carry.count > 0) {
       const { totalPct, count } = this.#carry.deliverAll();
       const result = this.#tree.deliver(totalPct);
+      if (result.generationTriggered) {
+        this.#aegis.grantCharge(AEGIS.capacityBase);
+      }
       this.#player.setSpeedMultiplier(1);
       bus.emit('CATALYSTS_CARRIED', { tiers: [], cap: 3 });
       bus.emit('CATALYSTS_DELIVERED', {
@@ -296,6 +390,7 @@ export class ArenaScene extends Phaser.Scene {
 
   #takeMeleeFrom(enemy: Phaser.Physics.Arcade.Image): void {
     if (this.#over || !enemy.active) return;
+    if (this.#aegis.isActive(this.time.now)) return;
 
     const now = this.time.now;
     if (now < this.#invulnUntilMs) return;
@@ -382,6 +477,9 @@ export class ArenaScene extends Phaser.Scene {
 
       if (state === 'tethered') {
         const result = this.#tree.deliver(CATALYST_VALUE[tier]);
+        if (result.generationTriggered) {
+          this.#aegis.grantCharge(AEGIS.capacityBase);
+        }
         CanisterPool.kill(child);
         bus.emit('CATALYSTS_DELIVERED', {
           totalPct: result.maturityPct,
@@ -510,6 +608,7 @@ export class ArenaScene extends Phaser.Scene {
 
   #takeExplosionDamage(damage: number): void {
     if (this.#over) return;
+    if (this.#aegis.isActive(this.time.now)) return;
 
     this.#hp = Math.max(0, this.#hp - damage);
     bus.emit('PLAYER_HP_CHANGED', { current: this.#hp, max: PLAYER.maxHp });
