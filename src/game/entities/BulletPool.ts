@@ -12,6 +12,7 @@ export class BulletPool {
 
   constructor(scene: Phaser.Scene, size: number) {
     this.group = scene.physics.add.group({
+      classType: Phaser.Physics.Arcade.Image,
       defaultKey: 'sheet',
       defaultFrame: FRAME.bulletCarbine,
       maxSize: size,

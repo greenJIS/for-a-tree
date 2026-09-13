@@ -60,6 +60,7 @@ export class EnemyPool {
   constructor(scene: Phaser.Scene, size: number) {
     this.#scene = scene;
     this.group = scene.physics.add.group({
+      classType: Phaser.Physics.Arcade.Image,
       defaultKey: 'sheet',
       defaultFrame: FRAME.swarmer,
       maxSize: size,
