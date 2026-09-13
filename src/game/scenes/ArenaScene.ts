@@ -307,6 +307,7 @@ export class ArenaScene extends Phaser.Scene {
     this.#enemies.group.getChildren().forEach((child, index) => {
       child.setData('id', index + 1);
     });
+    this.physics.add.collider(this.#enemies.group, this.#enemies.group);
     this.#canisters = new CanisterPool(this, 30);
     this.#particles = new ParticleFX(this);
 
