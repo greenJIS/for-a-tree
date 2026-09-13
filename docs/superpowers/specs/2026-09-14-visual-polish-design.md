@@ -41,11 +41,11 @@ emitter config never sets a `rotate` (or `angle`) value, so the sprite itself al
 its native 0° orientation regardless of where the player is aiming. Combined with bug #1's
 oversized scale, this reads as "the flash just sits on the player and doesn't turn."
 
-**Fix:** `ParticleFX.muzzleFlash(x, y, rotation)` passes `rotate: Phaser.Math.RadToDeg(rotation)`
-into the `explode()` call (or sets it via a per-emit override — whichever the installed Phaser
-4 particle API supports for one-shot rotation; both the emitter config and `explode()` accept a
-`rotate` field in Phaser's particle system). No change to the offset math, which is already
-correct.
+**Fix:** Phaser 4's `ParticleEmitter.explode(count?, x?, y?)` takes no rotation argument — `rotate`
+is an emitter-config field, not an emit-time override — so `ParticleFX.muzzleFlash(x, y, rotation)`
+must call `this.#muzzle.setConfig({ rotate: Phaser.Math.RadToDeg(rotation) })` immediately before
+`this.#muzzle.explode(1, ...)` on every call, so each burst picks up the current aim angle. No
+change to the offset math, which is already correct.
 
 ## 3. Bug — bullets spawn from player center, not the gun muzzle
 
@@ -91,7 +91,8 @@ runtime:
   `WeaponInventory.isReloading` is true for the active weapon (mirrors `AmmoReadout`'s existing
   `reloading` field, no new event needed).
 - **Static reference row** (one `HudPanel`, single compact line, never changes): weapon-select
-  `[1-3]`, Move `[WASD]`, Fire `[Mouse]`, Pause `[Esc]` — these never have cooldown/charge state,
+  `[1-3]`, Move `[WASD]`, Fire `[Mouse]`, Pause `[Esc/P]` (`ArenaScene` binds both `ESC` and `P`
+  to pause — the label must show both, not just `Esc`) — these never have cooldown/charge state,
   so they collapse into one row instead of four separate panels.
 
 New `src/hud/ReloadIndicator.tsx` (subscribes to `AMMO_UPDATED` for the active weapon's
@@ -109,13 +110,16 @@ competing with player/enemy/bullet sprites for visual attention and contributing
 - `setTint()` with a darker, desaturated tone (pulling the orange down in both brightness and
   saturation — exact hex tuned in-editor against the live tile, target roughly 65-75% of
   current brightness).
-- A radial vignette: one `Graphics` object filled with a radial-gradient-equivalent (Phaser
-  `Graphics` doesn't support CSS radial-gradient directly, so this is a series of concentric
-  `fillCircle` calls with increasing alpha toward the edge, or a pre-generated radial-gradient
-  texture drawn via `CanvasTexture` — implementer's choice, per Phaser 4's available APIs),
-  darkening the arena edges while keeping the center (where the tree/player/most action sits)
-  brighter. Depth placed above the ground `tileSprite` but below all gameplay sprites (aura
-  ring, canisters, enemies, bullets, player).
+- A radial vignette: `Graphics.fillGradientStyle` only does 4-corner linear gradients, not
+  radial, so generate a static radial-gradient `CanvasTexture` once in `create()` (black center
+  alpha 0 fading to black alpha ~0.6 at the arena's far corners, sized `ARENA.width` x
+  `ARENA.height`) and place it as one `Image` at arena center — cheaper than concentric
+  `fillCircle` calls since the gradient is drawn once, not redrawn per frame. No `setDepth()`
+  call needed: `ArenaScene` doesn't assign explicit depths to the ground, player, enemies, or
+  bullets (all default to depth 0, ordered by insertion), so adding the vignette `Image`
+  immediately after the ground `tileSprite` in `create()` — before every other `add.*` call —
+  places it correctly above ground and below all gameplay sprites through insertion order alone,
+  consistent with the rest of the scene.
 
 ## Verification
 
