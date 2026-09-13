@@ -20,6 +20,10 @@ export const AURA_RADIUS_BASE = 220;
 /** Barren zone extends this far past the aura. Delta spec 4. */
 export const BARREN_MARGIN = 120;
 
+/** Distance from player center to the gun muzzle, used for bullet spawn and muzzle-flash
+ * placement so both originate from the same point. */
+export const MUZZLE_OFFSET = 24;
+
 /** Tethered growth stops here; catalysts only past it. Delta spec 2. */
 export const GROWTH_CEILING = 60;
 
