@@ -9,6 +9,8 @@ import {
   BARREN_MARGIN,
   CARBINE,
   GROWTH_CEILING,
+  PLAYER,
+  SWARMER,
   TICK_INTERVAL_MS,
   TREE_POS,
 } from '../config';
@@ -20,6 +22,7 @@ import { TetherSystem } from '../systems/TetherSystem';
 import { TreeSystem } from '../systems/TreeSystem';
 import { bus } from '../eventBus';
 import type { TetherState } from '../eventBus';
+import { isArcadeImage } from '../guards';
 import spritesheetUrl from '../../assets/spritesheet.png';
 
 export class ArenaScene extends Phaser.Scene {
@@ -33,6 +36,11 @@ export class ArenaScene extends Phaser.Scene {
   #bullets!: BulletPool;
   #nextShotAtMs = 0;
   #enemies!: EnemyPool;
+  #hp: number = PLAYER.maxHp;
+  #invulnUntilMs = 0;
+  #kills = 0;
+  #startedAtMs = 0;
+  #over = false;
 
   constructor() {
     super('arena');
@@ -88,9 +96,52 @@ export class ArenaScene extends Phaser.Scene {
       loop: true,
       callback: () => this.#spawnAtEdge(),
     });
+
+    this.#startedAtMs = this.time.now;
+
+    this.physics.add.overlap(
+      this.#bullets.group,
+      this.#enemies.group,
+      (bulletObj, enemyObj) => {
+        if (!isArcadeImage(bulletObj) || !isArcadeImage(enemyObj)) return;
+        const bullet = bulletObj;
+        const enemy = enemyObj;
+        if (!bullet.active || !enemy.active) return;
+
+        BulletPool.kill(bullet);
+
+        const remaining = EnemyPool.hp(enemy) - CARBINE.damage;
+        if (remaining <= 0) {
+          EnemyPool.kill(enemy);
+          this.#kills += 1;
+          return;
+        }
+
+        EnemyPool.setHp(enemy, remaining);
+        enemy.setTint(0xffffff);
+        enemy.setTintFill();
+        this.time.delayedCall(60, () => enemy.clearTint());
+      },
+    );
+
+    this.physics.add.overlap(
+      this.#player.sprite,
+      this.#enemies.group,
+      (_playerObj, enemyObj) => {
+        if (!isArcadeImage(enemyObj)) return;
+        this.#takeMeleeFrom(enemyObj);
+      },
+    );
+
+    bus.emit('PLAYER_HP_CHANGED', {
+      current: this.#hp,
+      max: PLAYER.maxHp,
+    });
   }
 
   override update(_time: number, delta: number): void {
+    if (this.#over) return;
+
     const dtSec = delta / 1000;
     this.#player.update();
 
@@ -147,6 +198,47 @@ export class ArenaScene extends Phaser.Scene {
         ceilingPct: GROWTH_CEILING,
       });
     }
+  }
+
+  #takeMeleeFrom(enemy: Phaser.Physics.Arcade.Image): void {
+    if (this.#over || !enemy.active) return;
+
+    const now = this.time.now;
+    if (now < this.#invulnUntilMs) return;
+    if (now < EnemyPool.nextMeleeAtMs(enemy)) return;
+    if (this.#player.isDashing) return;
+
+    EnemyPool.setNextMeleeAtMs(enemy, now + SWARMER.meleeCooldownMs);
+    this.#invulnUntilMs = now + PLAYER.invulnMs;
+    this.#hp = Math.max(0, this.#hp - SWARMER.melee);
+
+    bus.emit('PLAYER_HP_CHANGED', {
+      current: this.#hp,
+      max: PLAYER.maxHp,
+    });
+
+    this.cameras.main.shake(80, 0.004);
+    this.tweens.add({
+      targets: this.#player.sprite,
+      alpha: 0.2,
+      duration: 1000 / PLAYER.flickerHz / 2,
+      yoyo: true,
+      repeat: Math.floor((PLAYER.invulnMs / 1000) * PLAYER.flickerHz),
+      onComplete: () => this.#player.sprite.setAlpha(1),
+    });
+
+    if (this.#hp === 0) this.#endRun();
+  }
+
+  #endRun(): void {
+    this.#over = true;
+    this.physics.pause();
+    bus.emit('GAME_OVER', {
+      score: this.#kills * 50,
+      generation: this.#tree.generation,
+      kills: this.#kills,
+      survivedMs: this.time.now - this.#startedAtMs,
+    });
   }
 
   #spawnAtEdge(): void {
