@@ -14,6 +14,8 @@ import {
   GROWTH_CEILING,
   MELEE_COOLDOWN_MS,
   PLAYER,
+  RAIL,
+  SCATTER,
   TICK_INTERVAL_MS,
   TREE_POS,
 } from '../config';
@@ -23,8 +25,7 @@ import { CanisterPool } from '../entities/CanisterPool';
 import { EnemyPool } from '../entities/EnemyPool';
 import { Player } from '../entities/Player';
 import { AegisSystem, type AegisStatus } from '../systems/AegisSystem';
-import { AmmoSystem } from '../systems/AmmoSystem';
-import type { AmmoState } from '../systems/AmmoSystem';
+import { WeaponInventory, type WeaponId } from '../systems/WeaponInventory';
 import { CarrySystem } from '../systems/CarrySystem';
 import { PityDropSystem } from '../systems/PityDropSystem';
 import { SpawnDirector, type MutantKind } from '../systems/SpawnDirector';
@@ -34,6 +35,18 @@ import { bus } from '../eventBus';
 import type { TetherState } from '../eventBus';
 import { isArcadeImage } from '../guards';
 import spritesheetUrl from '../../assets/spritesheet.png';
+
+const WEAPON_FIRE_RATES: Record<WeaponId, number> = {
+  carbine: CARBINE.fireRatePerSec,
+  scatter: SCATTER.fireRatePerSec,
+  rail: RAIL.fireRatePerSec,
+};
+
+const WEAPON_MAG_SIZES: Record<WeaponId, number> = {
+  carbine: CARBINE.magSize,
+  scatter: SCATTER.magSize,
+  rail: RAIL.magSize,
+};
 
 export class ArenaScene extends Phaser.Scene {
   #player!: Player;
@@ -45,9 +58,19 @@ export class ArenaScene extends Phaser.Scene {
   #msSinceTick = 0;
   #bullets!: BulletPool;
   #nextShotAtMs = 0;
-  #ammo = new AmmoSystem();
-  #lastEmittedAmmo: AmmoState | null = null;
+  #weapons = new WeaponInventory();
+  #lastEmittedAmmo: {
+    weaponId: WeaponId;
+    clip: number;
+    clipMax: number;
+    reserve: number;
+    reloading: boolean;
+  } | null = null;
   #reloadKey?: Phaser.Input.Keyboard.Key;
+  #key1?: Phaser.Input.Keyboard.Key;
+  #key2?: Phaser.Input.Keyboard.Key;
+  #key3?: Phaser.Input.Keyboard.Key;
+  #nextEnemyId = 0;
   #aegis = new AegisSystem();
   #aegisSprite!: Phaser.GameObjects.Image;
   #spaceKey?: Phaser.Input.Keyboard.Key;
@@ -126,6 +149,9 @@ export class ArenaScene extends Phaser.Scene {
 
     this.#bullets = new BulletPool(this, 200);
     this.#enemies = new EnemyPool(this, 60);
+    this.#enemies.group.getChildren().forEach((child, index) => {
+      child.setData('id', index + 1);
+    });
     this.#canisters = new CanisterPool(this, 30);
 
     const keyboard = this.input.keyboard;
@@ -133,6 +159,9 @@ export class ArenaScene extends Phaser.Scene {
       this.#reloadKey = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
       this.#spaceKey = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
       keyboard.addCapture([Phaser.Input.Keyboard.KeyCodes.SPACE]);
+      this.#key1 = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ONE);
+      this.#key2 = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.TWO);
+      this.#key3 = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.THREE);
     }
 
     this.#startedAtMs = this.time.now;
@@ -146,10 +175,20 @@ export class ArenaScene extends Phaser.Scene {
         const enemy = enemyObj;
         if (!bullet.active || !enemy.active) return;
 
-        BulletPool.kill(bullet);
+        if (BulletPool.isPiercing(bullet)) {
+          let enemyId = enemy.getData('id');
+          if (typeof enemyId !== 'number') {
+            enemyId = ++this.#nextEnemyId;
+            enemy.setData('id', enemyId);
+          }
+          if (BulletPool.hasHit(bullet, enemyId)) return;
+          BulletPool.recordHit(bullet, enemyId);
+        } else {
+          BulletPool.kill(bullet);
+        }
 
         const damage =
-          CARBINE.damage * (1 - EnemyPool.ballisticReduction(enemy));
+          BulletPool.damage(bullet) * (1 - EnemyPool.ballisticReduction(enemy));
         const remaining = EnemyPool.hp(enemy) - damage;
         if (remaining <= 0) {
           const killX = enemy.x;
@@ -161,6 +200,16 @@ export class ArenaScene extends Phaser.Scene {
         }
 
         EnemyPool.setHp(enemy, remaining);
+
+        const kb = BulletPool.knockback(bullet);
+        if (kb > 0 && enemy.body instanceof Phaser.Physics.Arcade.Body) {
+          const angle = bullet.rotation;
+          enemy.setVelocity(
+            enemy.body.velocity.x + Math.cos(angle) * kb,
+            enemy.body.velocity.y + Math.sin(angle) * kb,
+          );
+        }
+
         enemy.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
         this.time.delayedCall(60, () => enemy.clearTint());
       },
@@ -178,6 +227,11 @@ export class ArenaScene extends Phaser.Scene {
     bus.emit('PLAYER_HP_CHANGED', {
       current: this.#hp,
       max: PLAYER.maxHp,
+    });
+
+    bus.emit('WEAPON_SWITCHED', {
+      weaponId: this.#weapons.activeWeaponId,
+      unlocked: this.#weapons.unlockedIds,
     });
 
     const initialAegis = this.#aegis.status(this.time.now, AEGIS.capacityBase);
@@ -325,42 +379,91 @@ export class ArenaScene extends Phaser.Scene {
     this.#canisters.update(this.#player.x, this.#player.y);
     this.#handleCanisterPickups(state);
 
+    if (this.#key1 && Phaser.Input.Keyboard.JustDown(this.#key1)) {
+      if (this.#weapons.switchWeapon('carbine')) {
+        bus.emit('WEAPON_SWITCHED', {
+          weaponId: this.#weapons.activeWeaponId,
+          unlocked: this.#weapons.unlockedIds,
+        });
+      }
+    }
+    if (this.#key2 && Phaser.Input.Keyboard.JustDown(this.#key2)) {
+      if (this.#weapons.switchWeapon('scatter')) {
+        bus.emit('WEAPON_SWITCHED', {
+          weaponId: this.#weapons.activeWeaponId,
+          unlocked: this.#weapons.unlockedIds,
+        });
+      }
+    }
+    if (this.#key3 && Phaser.Input.Keyboard.JustDown(this.#key3)) {
+      if (this.#weapons.switchWeapon('rail')) {
+        bus.emit('WEAPON_SWITCHED', {
+          weaponId: this.#weapons.activeWeaponId,
+          unlocked: this.#weapons.unlockedIds,
+        });
+      }
+    }
+
     const pointer = this.input.activePointer;
     if (
       pointer.leftButtonDown() &&
       this.time.now >= this.#nextShotAtMs &&
-      this.#ammo.tryFire()
+      this.#weapons.tryFire()
     ) {
-      this.#nextShotAtMs = this.time.now + 1000 / CARBINE.fireRatePerSec;
-      this.#bullets.fire(
-        this.#player.x,
-        this.#player.y,
-        this.#player.sprite.rotation,
-      );
+      const activeId = this.#weapons.activeWeaponId;
+      this.#nextShotAtMs = this.time.now + 1000 / WEAPON_FIRE_RATES[activeId];
+      if (activeId === 'carbine') {
+        this.#bullets.fireCarbine(
+          this.#player.x,
+          this.#player.y,
+          this.#player.sprite.rotation,
+          1,
+        );
+      } else if (activeId === 'scatter') {
+        this.#bullets.fireScatter(
+          this.#player.x,
+          this.#player.y,
+          this.#player.sprite.rotation,
+          1,
+        );
+      } else if (activeId === 'rail') {
+        this.#bullets.fireRail(
+          this.#player.x,
+          this.#player.y,
+          this.#player.sprite.rotation,
+          1,
+        );
+      }
     }
 
     if (this.#reloadKey && Phaser.Input.Keyboard.JustDown(this.#reloadKey)) {
-      this.#ammo.startReload();
+      this.#weapons.startReload();
     }
 
-    this.#ammo.update(dtSec, state);
-    const ammoState = this.#ammo.state;
+    this.#weapons.update(dtSec, state, 1);
+    const activeId = this.#weapons.activeWeaponId;
+    const ammoState = this.#weapons.activeAmmo;
+    const clipMax = WEAPON_MAG_SIZES[activeId];
     const displayReserve = Math.floor(ammoState.reserve);
     if (
       !this.#lastEmittedAmmo ||
-      ammoState.clip !== this.#lastEmittedAmmo.clip ||
-      displayReserve !== this.#lastEmittedAmmo.reserve ||
-      ammoState.reloading !== this.#lastEmittedAmmo.reloading
+      this.#lastEmittedAmmo.weaponId !== activeId ||
+      this.#lastEmittedAmmo.clip !== ammoState.clip ||
+      this.#lastEmittedAmmo.clipMax !== clipMax ||
+      this.#lastEmittedAmmo.reserve !== displayReserve ||
+      this.#lastEmittedAmmo.reloading !== ammoState.reloading
     ) {
       this.#lastEmittedAmmo = {
+        weaponId: activeId,
         clip: ammoState.clip,
+        clipMax,
         reserve: displayReserve,
         reloading: ammoState.reloading,
       };
       bus.emit('AMMO_UPDATED', {
-        weaponId: 'carbine',
+        weaponId: activeId,
         clip: ammoState.clip,
-        clipMax: CARBINE.magSize,
+        clipMax,
         reserve: displayReserve,
       });
     }
