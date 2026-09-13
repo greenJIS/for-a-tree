@@ -86,4 +86,12 @@ describe('AmmoSystem', () => {
     for (let i = 0; i < 24; i += 1) ammo.tryFire();
     expect(ammo.state.reloading).toBe(true);
   });
+
+  it('transfers only integer rounds when reserve has fractional amount', () => {
+    ammo.update(1.05, 'tethered'); // 8.4 rounds in reserve
+    for (let i = 0; i < 24; i += 1) ammo.tryFire();
+    ammo.update(1.1, 'grace');
+    expect(ammo.state.clip).toBe(8);
+    expect(ammo.state.reserve).toBeCloseTo(0.4);
+  });
 });

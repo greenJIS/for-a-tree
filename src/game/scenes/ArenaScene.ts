@@ -45,7 +45,7 @@ export class ArenaScene extends Phaser.Scene {
   #nextShotAtMs = 0;
   #ammo = new AmmoSystem();
   #lastEmittedAmmo: AmmoState | null = null;
-  #reloadKey!: Phaser.Input.Keyboard.Key;
+  #reloadKey?: Phaser.Input.Keyboard.Key;
   #enemies!: EnemyPool;
   #canisters!: CanisterPool;
   #carry = new CarrySystem();
@@ -245,24 +245,29 @@ export class ArenaScene extends Phaser.Scene {
       );
     }
 
-    if (Phaser.Input.Keyboard.JustDown(this.#reloadKey)) {
+    if (this.#reloadKey && Phaser.Input.Keyboard.JustDown(this.#reloadKey)) {
       this.#ammo.startReload();
     }
 
     this.#ammo.update(dtSec, state);
     const ammoState = this.#ammo.state;
+    const displayReserve = Math.floor(ammoState.reserve);
     if (
       !this.#lastEmittedAmmo ||
       ammoState.clip !== this.#lastEmittedAmmo.clip ||
-      ammoState.reserve !== this.#lastEmittedAmmo.reserve ||
+      displayReserve !== this.#lastEmittedAmmo.reserve ||
       ammoState.reloading !== this.#lastEmittedAmmo.reloading
     ) {
-      this.#lastEmittedAmmo = ammoState;
+      this.#lastEmittedAmmo = {
+        clip: ammoState.clip,
+        reserve: displayReserve,
+        reloading: ammoState.reloading,
+      };
       bus.emit('AMMO_UPDATED', {
         weaponId: 'carbine',
         clip: ammoState.clip,
         clipMax: CARBINE.magSize,
-        reserve: ammoState.reserve,
+        reserve: displayReserve,
       });
     }
 

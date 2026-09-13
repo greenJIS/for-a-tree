@@ -55,7 +55,7 @@ export class AmmoSystem {
       if (this.#reloadRemainingMs <= 0) {
         this.#reloadRemainingMs = 0;
         const needed = CARBINE.magSize - this.#clip;
-        const transfer = Math.min(needed, this.#reserve);
+        const transfer = Math.min(needed, Math.floor(this.#reserve));
         this.#clip += transfer;
         this.#reserve -= transfer;
       }
