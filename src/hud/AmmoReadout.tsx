@@ -16,7 +16,6 @@ export function AmmoReadout() {
     clipMax: 24,
     reserve: 0,
   });
-  const [reloading, setReloading] = useState(false);
 
   useEffect(() => {
     const onUpdate = (e: Ammo) => setAmmo(e);
@@ -24,16 +23,14 @@ export function AmmoReadout() {
     return () => bus.off('AMMO_UPDATED', onUpdate);
   }, []);
 
-  useEffect(() => {
-    // Reload state does not currently ride on AMMO_UPDATED's payload
-    // shape, so it is inferred: a clip that hasn't moved while the
-    // reserve keeps climbing is ambiguous, so instead this simply mirrors
-    // the low-clip visual state and the readout leans on the label text
-    // rather than a separate boolean. Kept intentionally simple for this
-    // plan; a dedicated reload flag can be added to AMMO_UPDATED's payload
-    // later without breaking this component.
-    setReloading(ammo.clip === 0 && ammo.reserve > 0);
-  }, [ammo]);
+  // Reload state does not currently ride on AMMO_UPDATED's payload shape,
+  // so it is inferred: a clip that hasn't moved while the reserve keeps
+  // climbing is ambiguous, so instead this simply mirrors the low-clip
+  // visual state and the readout leans on the label text rather than a
+  // separate boolean. Kept intentionally simple for this plan; a dedicated
+  // reload flag can be added to AMMO_UPDATED's payload later without
+  // breaking this component.
+  const reloading = ammo.clip === 0 && ammo.reserve > 0;
 
   return (
     <div className="flex flex-col items-end gap-1 text-right">

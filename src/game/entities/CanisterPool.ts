@@ -10,7 +10,6 @@ import Phaser from 'phaser';
 import { CANISTER } from '../config';
 import { computeCanisterRest } from '../systems/CanisterPhysics';
 import { FRAME } from '../frames';
-import { isArcadeImage } from '../guards';
 import type { CatalystTier } from '../eventBus';
 
 const TIER_TINT: Record<CatalystTier, number> = {
