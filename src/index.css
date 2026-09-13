@@ -1,9 +1,12 @@
 @import 'tailwindcss';
 
 /*
- * Design tokens for "For a Tree". Tether state colours are referenced by both
- * the React HUD and the Phaser aura ring tint, so they live here as the single
- * source of truth. See docs/For_a_Tree_SRS.md section 6.
+ * Design tokens for "For a Tree". Tether state colours are referenced by the
+ * React HUD, but Phaser's aura ring in src/game/scenes/ArenaScene.ts currently
+ * duplicates these exact values as raw hex literals (Phaser cannot read
+ * Tailwind CSS custom properties) — keeping the two in sync is a manual
+ * responsibility until/unless a shared constants module is introduced. See
+ * docs/For_a_Tree_SRS.md section 6.
  */
 @theme {
   --color-sand-950: #0b1410;

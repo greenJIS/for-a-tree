@@ -1077,7 +1077,7 @@ function App() {
   return (
     <main className="flex h-full w-full items-center justify-center bg-sand-950">
       <div
-        className="relative aspect-video w-full max-w-[1280px] overflow-hidden
+        className="relative aspect-video w-full max-w-7xl overflow-hidden
           border border-sand-800 bg-sand-900 shadow-2xl shadow-black/60"
       >
         <div id="phaser-root" ref={containerRef} className="absolute inset-0" />
@@ -2464,7 +2464,7 @@ All of the following must hold before starting Plan 2.
 
 - [ ] `npm run build` exits 0 with `strict: true`.
 - [ ] `npm run lint` exits 0.
-- [ ] `npm test` passes 24 tests.
+- [ ] `npm test` passes 26 tests.
 - [ ] `grep -rnE ': any|<any>|as any|any\[\]' src --include=*.ts --include=*.tsx` finds nothing.
       (Matching the bare word `any` also hits ordinary English in comments, so match the syntax instead.)
 - [ ] `grep -rn " as " src --include=*.ts --include=*.tsx` finds only `as const`. Every other narrowing
