@@ -118,8 +118,7 @@ export class ArenaScene extends Phaser.Scene {
         }
 
         EnemyPool.setHp(enemy, remaining);
-        enemy.setTint(0xffffff);
-        enemy.setTintFill();
+        enemy.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
         this.time.delayedCall(60, () => enemy.clearTint());
       },
     );
