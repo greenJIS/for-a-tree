@@ -98,10 +98,10 @@ decay                      : -0.6 %/s while untethered, at any maturity, unchang
 
 The run acquires two legible phases.
 
-| Phase | Maturity | Behaviour |
-| :---- | :------- | :-------- |
-| Cultivation | `0` to `60%` | Hug the tree. Growth runs, reserves refill. A sortie is a net loss. |
-| Sortie | `60%` to `100%` | Growth is frozen. Delivered catalysts are the only progress. |
+| Phase       | Maturity        | Behaviour                                                           |
+| :---------- | :-------------- | :------------------------------------------------------------------ |
+| Cultivation | `0` to `60%`    | Hug the tree. Growth runs, reserves refill. A sortie is a net loss. |
+| Sortie      | `60%` to `100%` | Growth is frozen. Delivered catalysts are the only progress.        |
 
 Above the ceiling a tethered player has zero growth **and** zero decay. They are frozen, not safe:
 `targetThreat(t) = 3 + t/6` keeps climbing whether or not they move. Parking is a slow loss.
@@ -157,17 +157,17 @@ gate, not a ratchet, and re-crossing it costs only the time to regrow.
 
 New. Extends SRS 3.1.
 
-| Property | Value |
-| :------- | :---- |
-| Input | `Shift` |
-| Distance | 180 px |
-| Duration | 0.15 s |
-| Cooldown | 1.6 s, measured from dash start |
-| Invulnerability | Full, for the 0.15 s of travel |
-| Collision | Passes through enemies; player remains clamped to arena bounds |
-| Direction | Current movement input vector; if no input, the current aim vector |
-| Visual | Three alpha-decayed copies of the player frame at 0.05 s intervals |
-| Audio | `snd_dash` |
+| Property        | Value                                                              |
+| :-------------- | :----------------------------------------------------------------- |
+| Input           | `Shift`                                                            |
+| Distance        | 180 px                                                             |
+| Duration        | 0.15 s                                                             |
+| Cooldown        | 1.6 s, measured from dash start                                    |
+| Invulnerability | Full, for the 0.15 s of travel                                     |
+| Collision       | Passes through enemies; player remains clamped to arena bounds     |
+| Direction       | Current movement input vector; if no input, the current aim vector |
+| Visual          | Three alpha-decayed copies of the player frame at 0.05 s intervals |
+| Audio           | `snd_dash`                                                         |
 
 ### 3.1 Why a dash and not more damage
 
@@ -190,7 +190,7 @@ blockade at the moment it forms.
 
 Supersedes the ejection portion of SRS 3.6, and adds a drop-eligibility rule to SRS 3.5.
 
-Under section 2 catalysts are the bottleneck resource, so where they can be *obtained* decides
+Under section 2 catalysts are the bottleneck resource, so where they can be _obtained_ decides
 whether the ceiling has any force. Enemies aggro exclusively onto the player, which means a player
 who never leaves the tree still generates kills — inside the aura. Their canisters would settle
 inside the aura and cash in instantly under SRS 3.3, so the tree-hugger would farm catalysts
@@ -331,9 +331,9 @@ instead of a missing drop.
 
 Extends SRS 5.3. One card is added; no existing card's values change.
 
-| Card | Effect | Repeatable |
-| :--- | :----- | :--------- |
-| Rhizome Splice | Delivered catalyst value +25% | Yes |
+| Card           | Effect                        | Repeatable |
+| :------------- | :---------------------------- | :--------- |
+| Rhizome Splice | Delivered catalyst value +25% | Yes        |
 
 `Rhizome Splice` stacks **multiplicatively** — `x1.25` per copy — under the rule in SRS 5.3. Two
 copies yield `x1.5625`, not `x1.5`. It multiplies the catalyst's face value at the moment of
@@ -347,13 +347,13 @@ thirteen cards. Draw rules in SRS 5.2 are unchanged.
 No values change, but several cards shift in worth. Recorded here so the balance pass does not
 "correct" them.
 
-| Card | Change in role |
-| :--- | :------------- |
-| Heartwood | Stops being a trap. Untethered time is mandatory now, so decay reduction always applies. |
-| Wider Canopy | Now doubly good — a larger aura also shortens every carry, per section 4. |
-| Deep Roots | Weaker. Only affects the cultivation phase, which is roughly a third of a generation. |
-| Munitions Loom | Stronger. The player is away from the regeneration source far more often. |
-| Bio-Surge | Strong burst. Can punch through the ceiling; see 2.2. |
+| Card           | Change in role                                                                           |
+| :------------- | :--------------------------------------------------------------------------------------- |
+| Heartwood      | Stops being a trap. Untethered time is mandatory now, so decay reduction always applies. |
+| Wider Canopy   | Now doubly good — a larger aura also shortens every carry, per section 4.                |
+| Deep Roots     | Weaker. Only affects the cultivation phase, which is roughly a third of a generation.    |
+| Munitions Loom | Stronger. The player is away from the regeneration source far more often.                |
+| Bio-Surge      | Strong burst. Can punch through the ceiling; see 2.2.                                    |
 
 ---
 
@@ -383,22 +383,22 @@ countdown that already expired.
 SRS 3.2 lists phases as `0–25`, `26–65`, `66–99`, `100`. Maturity is a float, so `25.5%` falls in
 no phase. Redefined as half-open intervals:
 
-| Phase | Range | Sprite | Size |
-| :---- | :---- | :----- | :--- |
-| 1 — Sprout | `[0, 25)` | `tree_sprout` | 64 px |
-| 2 — Sapling | `[25, 65)` | `tree_sapling` | 96 px |
-| 3 — Bio-Arbor | `[65, 100)` | `tree_sapling` tinted, veins pulsing | 128 px |
-| 4 — Apex | `100` exactly | `tree_sapling` bloom and spore burst | 160 px |
+| Phase         | Range         | Sprite                               | Size   |
+| :------------ | :------------ | :----------------------------------- | :----- |
+| 1 — Sprout    | `[0, 25)`     | `tree_sprout`                        | 64 px  |
+| 2 — Sapling   | `[25, 65)`    | `tree_sapling`                       | 96 px  |
+| 3 — Bio-Arbor | `[65, 100)`   | `tree_sapling` tinted, veins pulsing | 128 px |
+| 4 — Apex      | `100` exactly | `tree_sapling` bloom and spore burst | 160 px |
 
 ### 9.3 Carbine versus Mag-Rail — no change, recorded reasoning
 
 Burst damage favours the Mag-Rail (96 dps piercing against the Carbine's 88 dps single-target),
 which looks like the Carbine is obsolete. It is not, because reserve regeneration gates sustain:
 
-| Weapon | Burst dps | Sustained dps (regen-limited) |
-| :----- | :-------- | :---------------------------- |
-| Kinetic Carbine | 88 | 88, fire-rate-capped before regen binds |
-| Mag-Rail Staker | 96 | 48 (`0.4 spikes/s x 120`) |
+| Weapon          | Burst dps | Sustained dps (regen-limited)           |
+| :-------------- | :-------- | :-------------------------------------- |
+| Kinetic Carbine | 88        | 88, fire-rate-capped before regen binds |
+| Mag-Rail Staker | 96        | 48 (`0.4 spikes/s x 120`)               |
 
 The Carbine is the sustain weapon and the Mag-Rail is the burst weapon. Working as intended. This
 is recorded so a later balance pass does not "fix" a non-problem.
@@ -447,24 +447,24 @@ referenced by no system, and the Acid Spitter, which section 12 cuts. Two effect
 requires had no art at all: a particle texture (SRS 6.2 needs one for spore bursts, splatter,
 explosions, and the Generation bloom) and a muzzle flash. The dead frames pay for them.
 
-| Index | Key | Display px | Notes |
-| :---- | :-- | :--------- | :---- |
-| 0 | `player_mech` | 40 | Centered on body pivot, barrel facing `+X` |
-| 1 | `fx_aegis_dome` | 120 | Additive blend, slow rotation |
-| 2 | `fx_aura_ring` | 440 base | Authored greyscale; tinted cyan, amber, rust-red |
-| 3 | `fx_particle` | 8–48 | New. Featureless white radial blob, tinted per use |
-| 4 | `enemy_swarmer` | 36 | Faces `+X` |
-| 5 | `enemy_brute` | 56 | Faces `+X` |
-| 6 | `enemy_detonator` | 40 | Faces `+X`, flashes white for 0.6 s before detonating |
-| 7 | `fx_muzzle_flash` | 24 | New. Replaces the cut Acid Spitter. 60 ms life |
-| 8 | `bullet_carbine` | 20 x 8 | Travels `+X` |
-| 9 | `bullet_scatter` | 12 x 6 | Travels `+X` |
-| 10 | `bullet_rail` | 48 x 10 | Travels `+X` |
-| 11 | `canister` | 24 | Authored greyscale; tinted per catalyst tier |
-| 12 | `tree_sprout` | 64 | Phase 1 |
-| 13 | `tree_sapling` | 96 / 128 / 160 | Phases 2, 3, 4 by scale and tint |
-| 14 | `fx_ground_decal` | 64–160 | New. Replaces the supply crate. Scorch left by deaths |
-| 15 | `sand_decal` | 48–128 | Arena dressing |
+| Index | Key               | Display px     | Notes                                                 |
+| :---- | :---------------- | :------------- | :---------------------------------------------------- |
+| 0     | `player_mech`     | 40             | Centered on body pivot, barrel facing `+X`            |
+| 1     | `fx_aegis_dome`   | 120            | Additive blend, slow rotation                         |
+| 2     | `fx_aura_ring`    | 440 base       | Authored greyscale; tinted cyan, amber, rust-red      |
+| 3     | `fx_particle`     | 8–48           | New. Featureless white radial blob, tinted per use    |
+| 4     | `enemy_swarmer`   | 36             | Faces `+X`                                            |
+| 5     | `enemy_brute`     | 56             | Faces `+X`                                            |
+| 6     | `enemy_detonator` | 40             | Faces `+X`, flashes white for 0.6 s before detonating |
+| 7     | `fx_muzzle_flash` | 24             | New. Replaces the cut Acid Spitter. 60 ms life        |
+| 8     | `bullet_carbine`  | 20 x 8         | Travels `+X`                                          |
+| 9     | `bullet_scatter`  | 12 x 6         | Travels `+X`                                          |
+| 10    | `bullet_rail`     | 48 x 10        | Travels `+X`                                          |
+| 11    | `canister`        | 24             | Authored greyscale; tinted per catalyst tier          |
+| 12    | `tree_sprout`     | 64             | Phase 1                                               |
+| 13    | `tree_sapling`    | 96 / 128 / 160 | Phases 2, 3, 4 by scale and tint                      |
+| 14    | `fx_ground_decal` | 64–160         | New. Replaces the supply crate. Scorch left by deaths |
+| 15    | `sand_decal`      | 48–128         | Arena dressing                                        |
 
 ### 11.3 Authoring rules
 
@@ -478,8 +478,8 @@ explosions, and the Generation bloom) and a muzzle flash. The dead frames pay fo
 
 ### 11.4 Separate files
 
-| File | Specification | Purpose |
-| :--- | :------------ | :------ |
+| File                    | Specification                  | Purpose                                  |
+| :---------------------- | :----------------------------- | :--------------------------------------- |
 | `src/assets/ground.png` | 512 x 512, seamlessly tileable | Desert floor, tiled once at scene create |
 
 No art is required for the dash; it is three alpha-decayed copies of frame 0.
@@ -488,9 +488,9 @@ No art is required for the dash; it is three alpha-decayed copies of frame 0.
 
 SRS 7 stands, plus two entries.
 
-| Key | Description |
-| :-- | :---------- |
-| `snd_dash` | Short airy whoosh, about 120 ms |
+| Key                  | Description                                                            |
+| :------------------- | :--------------------------------------------------------------------- |
+| `snd_dash`           | Short airy whoosh, about 120 ms                                        |
 | `snd_growth_stalled` | Soft descending two-note, once when maturity first reaches the ceiling |
 
 All effects stay under 0.4 s and are normalised to about -6 dBFS so simultaneous playback does not
@@ -506,14 +506,14 @@ outright** rather than retaining it as a stretch item. SRS 10 moves it from stre
 Every other change in this document is a constant, a clamp, or a payload field, and fits inside
 the sprint that already owns the system it touches.
 
-| Change | Sprint |
-| :----- | :----- |
-| Growth ceiling, `GROWTH_STALLED`, gauge tick | 2 |
-| Grace meter | 2 |
-| Dash and `DASH_STATUS` | 3 |
-| Barren zone, settling clamp, barren ring, dust puff | 5 |
-| Rhizome Splice card | 6 |
-| Aegis ring, tree phase ranges | 6 |
+| Change                                              | Sprint |
+| :-------------------------------------------------- | :----- |
+| Growth ceiling, `GROWTH_STALLED`, gauge tick        | 2      |
+| Grace meter                                         | 2      |
+| Dash and `DASH_STATUS`                              | 3      |
+| Barren zone, settling clamp, barren ring, dust puff | 5      |
+| Rhizome Splice card                                 | 6      |
+| Aegis ring, tree phase ranges                       | 6      |
 
 ---
 
@@ -545,12 +545,12 @@ The correction has worked if all of the following hold in playtest.
 
 Recorded so they are not revisited.
 
-| Alternative | Why rejected |
-| :---------- | :----------- |
-| Cut base growth to about `0.35 %/s` | Catalysts become the main income, but foregone growth still taxes every sortie, so the trip stays marginal. The ceiling removes that tax outright. |
-| Ceiling that falls per generation, `60 - 4 x gen` | Adds a third escalating variable on top of the growth scalar and `targetThreat(t)`. Tuning risk with no gain; the cultivation phase already compresses on its own. |
-| Reduce global invulnerability to `0.35 s` | Makes crowds lethal without giving any tool to escape them, which worsens the return-trip strangle rather than fixing it. |
-| Move risk onto cargo — hits drop a carried catalyst | Cheap and thematic, but removing the movement penalty makes sorties fast and consequence-free, so greed stops being punished. |
-| Enemies attack the tree | Already rejected in SRS 10 and still correct. It needs a second AI state and a tree health bar; decay delivers the same stakes for free. |
-| Clamp canisters to the aura edge, but let kills anywhere drop | The first draft of section 4. It only constrained kills made *outside* the aura; kills inside it left their canister where it fell, so a tree-hugger farmed catalysts without breaking tether and the ceiling had no force. The barren zone replaces it. |
-| Let barren kills still advance the pity counter | Would make defending the tree drain the player's pity reserve, so the first real sortie would start with worse drop odds for having survived. Inverts the intent of SRS 3.5. |
+| Alternative                                                   | Why rejected                                                                                                                                                                                                                                             |
+| :------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cut base growth to about `0.35 %/s`                           | Catalysts become the main income, but foregone growth still taxes every sortie, so the trip stays marginal. The ceiling removes that tax outright.                                                                                                       |
+| Ceiling that falls per generation, `60 - 4 x gen`             | Adds a third escalating variable on top of the growth scalar and `targetThreat(t)`. Tuning risk with no gain; the cultivation phase already compresses on its own.                                                                                       |
+| Reduce global invulnerability to `0.35 s`                     | Makes crowds lethal without giving any tool to escape them, which worsens the return-trip strangle rather than fixing it.                                                                                                                                |
+| Move risk onto cargo — hits drop a carried catalyst           | Cheap and thematic, but removing the movement penalty makes sorties fast and consequence-free, so greed stops being punished.                                                                                                                            |
+| Enemies attack the tree                                       | Already rejected in SRS 10 and still correct. It needs a second AI state and a tree health bar; decay delivers the same stakes for free.                                                                                                                 |
+| Clamp canisters to the aura edge, but let kills anywhere drop | The first draft of section 4. It only constrained kills made _outside_ the aura; kills inside it left their canister where it fell, so a tree-hugger farmed catalysts without breaking tether and the ceiling had no force. The barren zone replaces it. |
+| Let barren kills still advance the pity counter               | Would make defending the tree drain the player's pity reserve, so the first real sortie would start with worse drop odds for having survived. Inverts the intent of SRS 3.5.                                                                             |

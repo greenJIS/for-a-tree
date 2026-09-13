@@ -37,7 +37,7 @@ without a canvas. Everything Phaser-specific is a thin adapter over those classe
   inside `update`.
 - **Prettier defaults** (`printWidth` 80, 2-space, single quotes, trailing commas `all`). Run
   `npx prettier --write .` before every commit.
-- **Commit format:** `type(scope): short summary`, blank line, body explaining *why* when not obvious.
+- **Commit format:** `type(scope): short summary`, blank line, body explaining _why_ when not obvious.
   Types: `feat`, `fix`, `chore`, `refactor`, `docs`, `test`, `ci`, `build`, `perf`, `style`, `revert`.
   Never add a Claude/Anthropic co-author trailer.
 - **All art is one spritesheet** at `src/assets/spritesheet.png`, 4x4, 512 px cells. Effects are tints,
@@ -58,26 +58,26 @@ to do and exactly what you should see. Do not skip the manual step and do not fa
 
 ## File structure
 
-| File | Responsibility |
-| :--- | :------------- |
-| `src/game/config.ts` | Every balance constant, one place. No magic numbers anywhere else. |
-| `src/game/frames.ts` | Spritesheet frame indices. Its own module so entities need not import the scene. |
-| `src/game/guards.ts` | Type guards that narrow Phaser's loosely-typed callback and pool arguments. |
-| `src/game/eventBus.ts` | The typed `mitt` bus and its event map. |
-| `src/game/systems/TetherSystem.ts` | Grace meter and tether state machine. Pure, no Phaser. |
-| `src/game/systems/TreeSystem.ts` | Maturity, ceiling, decay, Generation, overflow, phase. Pure, no Phaser. |
-| `src/game/scenes/ArenaScene.ts` | The one Phaser scene. Owns entities and wires systems to the bus. |
-| `src/game/entities/Player.ts` | Player sprite, movement, aim, dash. |
-| `src/game/entities/BulletPool.ts` | Pooled projectiles. |
-| `src/game/entities/EnemyPool.ts` | Pooled enemies with pursuit. |
-| `src/game/createGame.ts` | `Phaser.Game` factory and config. |
-| `src/game/usePhaserGame.ts` | React hook: mount on mount, destroy on unmount. |
-| `src/hud/Hud.tsx` | HUD root, `pointer-events: none`. |
-| `src/hud/MaturityGauge.tsx` | Maturity bar, ceiling tick, GEN counter, rate readout. |
-| `src/hud/TetherBeacon.tsx` | Three-state beacon. |
-| `src/hud/HealthBar.tsx` | HP bar and numeric readout. |
-| `src/hud/DecayVignette.tsx` | Rust-red screen-edge vignette. |
-| `src/hud/GameOverCard.tsx` | Scorecard and restart. |
+| File                               | Responsibility                                                                   |
+| :--------------------------------- | :------------------------------------------------------------------------------- |
+| `src/game/config.ts`               | Every balance constant, one place. No magic numbers anywhere else.               |
+| `src/game/frames.ts`               | Spritesheet frame indices. Its own module so entities need not import the scene. |
+| `src/game/guards.ts`               | Type guards that narrow Phaser's loosely-typed callback and pool arguments.      |
+| `src/game/eventBus.ts`             | The typed `mitt` bus and its event map.                                          |
+| `src/game/systems/TetherSystem.ts` | Grace meter and tether state machine. Pure, no Phaser.                           |
+| `src/game/systems/TreeSystem.ts`   | Maturity, ceiling, decay, Generation, overflow, phase. Pure, no Phaser.          |
+| `src/game/scenes/ArenaScene.ts`    | The one Phaser scene. Owns entities and wires systems to the bus.                |
+| `src/game/entities/Player.ts`      | Player sprite, movement, aim, dash.                                              |
+| `src/game/entities/BulletPool.ts`  | Pooled projectiles.                                                              |
+| `src/game/entities/EnemyPool.ts`   | Pooled enemies with pursuit.                                                     |
+| `src/game/createGame.ts`           | `Phaser.Game` factory and config.                                                |
+| `src/game/usePhaserGame.ts`        | React hook: mount on mount, destroy on unmount.                                  |
+| `src/hud/Hud.tsx`                  | HUD root, `pointer-events: none`.                                                |
+| `src/hud/MaturityGauge.tsx`        | Maturity bar, ceiling tick, GEN counter, rate readout.                           |
+| `src/hud/TetherBeacon.tsx`         | Three-state beacon.                                                              |
+| `src/hud/HealthBar.tsx`            | HP bar and numeric readout.                                                      |
+| `src/hud/DecayVignette.tsx`        | Rust-red screen-edge vignette.                                                   |
+| `src/hud/GameOverCard.tsx`         | Scorecard and restart.                                                           |
 
 ---
 
@@ -2479,11 +2479,11 @@ All of the following must hold before starting Plan 2.
 
 These are not gaps. They are Plans 2 and 3.
 
-| Deferred | Plan |
-| :------- | :--- |
-| Spawn director, threat budget, stat ramp, Bio-Detonator, Carapace Brute | 2 |
-| Magazine, reload, ammunition reserves and tethered regeneration | 2 |
-| Pity drops, barren zone enforcement, canister arc and magnet, carry and delivery | 2 |
-| Generation draft modal, 13-card pool, Aegis, Scatter Pulser, Mag-Rail | 3 |
-| Score formula, high score, pause, blur handling, `RESTART_SIMULATION` | 3 |
-| Audio, particles, ground tile, balance pass, GitHub Pages deploy | 3 |
+| Deferred                                                                         | Plan |
+| :------------------------------------------------------------------------------- | :--- |
+| Spawn director, threat budget, stat ramp, Bio-Detonator, Carapace Brute          | 2    |
+| Magazine, reload, ammunition reserves and tethered regeneration                  | 2    |
+| Pity drops, barren zone enforcement, canister arc and magnet, carry and delivery | 2    |
+| Generation draft modal, 13-card pool, Aegis, Scatter Pulser, Mag-Rail            | 3    |
+| Score formula, high score, pause, blur handling, `RESTART_SIMULATION`            | 3    |
+| Audio, particles, ground tile, balance pass, GitHub Pages deploy                 | 3    |
