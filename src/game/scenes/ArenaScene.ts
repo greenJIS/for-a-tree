@@ -6,11 +6,13 @@ import Phaser from 'phaser';
 import {
   AURA_RADIUS_BASE,
   BARREN_MARGIN,
+  CARBINE,
   GROWTH_CEILING,
   TICK_INTERVAL_MS,
   TREE_POS,
 } from '../config';
 import { FRAME } from '../frames';
+import { BulletPool } from '../entities/BulletPool';
 import { Player } from '../entities/Player';
 import { TetherSystem } from '../systems/TetherSystem';
 import { TreeSystem } from '../systems/TreeSystem';
@@ -26,6 +28,8 @@ export class ArenaScene extends Phaser.Scene {
   #treeSprite!: Phaser.GameObjects.Image;
   #lastTetherState: TetherState = 'tethered';
   #msSinceTick = 0;
+  #bullets!: BulletPool;
+  #nextShotAtMs = 0;
 
   constructor() {
     super('arena');
@@ -74,11 +78,23 @@ export class ArenaScene extends Phaser.Scene {
     this.#treeSprite.setDisplaySize(64, 64);
 
     this.#player = new Player(this, TREE_POS.x, TREE_POS.y);
+    this.#bullets = new BulletPool(this, 200);
   }
 
   override update(_time: number, delta: number): void {
     const dtSec = delta / 1000;
     this.#player.update();
+
+    const pointer = this.input.activePointer;
+    if (pointer.leftButtonDown() && this.time.now >= this.#nextShotAtMs) {
+      this.#nextShotAtMs = this.time.now + 1000 / CARBINE.fireRatePerSec;
+      this.#bullets.fire(
+        this.#player.x,
+        this.#player.y,
+        this.#player.sprite.rotation,
+      );
+    }
+    this.#bullets.cull();
 
     const dist = Phaser.Math.Distance.Between(
       this.#player.x,
