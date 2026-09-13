@@ -41,6 +41,7 @@ export class ArenaScene extends Phaser.Scene {
   #kills = 0;
   #startedAtMs = 0;
   #over = false;
+  #spawnTimer!: Phaser.Time.TimerEvent;
 
   constructor() {
     super('arena');
@@ -91,7 +92,7 @@ export class ArenaScene extends Phaser.Scene {
     this.#player = new Player(this, TREE_POS.x, TREE_POS.y);
     this.#bullets = new BulletPool(this, 200);
     this.#enemies = new EnemyPool(this, 60);
-    this.time.addEvent({
+    this.#spawnTimer = this.time.addEvent({
       delay: 1500,
       loop: true,
       callback: () => this.#spawnAtEdge(),
@@ -232,6 +233,7 @@ export class ArenaScene extends Phaser.Scene {
   #endRun(): void {
     this.#over = true;
     this.physics.pause();
+    this.#spawnTimer.remove();
     bus.emit('GAME_OVER', {
       score: this.#kills * 50,
       generation: this.#tree.generation,

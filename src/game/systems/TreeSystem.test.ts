@@ -71,6 +71,12 @@ describe('TreeSystem', () => {
     expect(tree.maturityPct).toBeCloseTo(80);
   });
 
+  it('holds maturity steady while tethered above the ceiling', () => {
+    tree.update(1000, 'tethered');
+    tree.deliver(20);
+    expect(tree.update(0.5, 'tethered').maturityPct).toBe(80);
+  });
+
   it('triggers a Generation at 100% and carries the remainder over', () => {
     tree.update(1000, 'tethered');
     const result = tree.deliver(50);
