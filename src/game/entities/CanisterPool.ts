@@ -72,7 +72,7 @@ export class CanisterPool {
   }
 
   /** Magnet pull toward the player, plus lifetime and despawn flashing. */
-  update(playerX: number, playerY: number): void {
+  update(playerX: number, playerY: number, magnetRadiusMult = 1): void {
     const now = this.#scene.time.now;
 
     for (const child of this.group.getChildren()) {
@@ -100,7 +100,7 @@ export class CanisterPool {
         playerX,
         playerY,
       );
-      if (dist <= CANISTER.magnetRadius && dist > 0) {
+      if (dist <= CANISTER.magnetRadius * magnetRadiusMult && dist > 0) {
         const angle = Phaser.Math.Angle.Between(
           child.x,
           child.y,

@@ -23,6 +23,17 @@ describe('CarrySystem', () => {
     expect(carry.count).toBe(3);
   });
 
+  it('allows adding up to custom capacity when provided', () => {
+    expect(carry.add('silt', 5)).toBe(true);
+    expect(carry.add('nitrate', 5)).toBe(true);
+    expect(carry.add('phyto', 5)).toBe(true);
+    expect(carry.add('silt', 5)).toBe(true);
+    expect(carry.add('nitrate', 5)).toBe(true);
+    expect(carry.count).toBe(5);
+    expect(carry.add('phyto', 5)).toBe(false);
+    expect(carry.count).toBe(5);
+  });
+
   it('applies a 5% speed penalty per carried catalyst, capped at 15%', () => {
     carry.add('silt');
     expect(carry.speedMultiplier()).toBeCloseTo(0.95);

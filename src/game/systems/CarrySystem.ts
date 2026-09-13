@@ -21,8 +21,8 @@ export class CarrySystem {
     return this.#tiers.length;
   }
 
-  add(tier: CatalystTier): boolean {
-    if (this.#tiers.length >= CARRY.capacityBase) return false;
+  add(tier: CatalystTier, capacity: number = CARRY.capacityBase): boolean {
+    if (this.#tiers.length >= capacity) return false;
     this.#tiers.push(tier);
     return true;
   }

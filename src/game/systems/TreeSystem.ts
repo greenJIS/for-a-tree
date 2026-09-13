@@ -53,9 +53,14 @@ export class TreeSystem {
     return 1;
   }
 
-  update(dtSec: number, state: TetherState): TreeUpdate {
+  update(
+    dtSec: number,
+    state: TetherState,
+    tetherGrowthMult = 1,
+    decayRateMult = 1,
+  ): TreeUpdate {
     if (state === 'tethered') {
-      const rate = this.growthRatePerSec;
+      const rate = this.growthRatePerSec * tetherGrowthMult;
       if (rate > 0) {
         this.#maturityPct = Math.min(
           GROWTH_CEILING,
@@ -63,7 +68,10 @@ export class TreeSystem {
         );
       }
     } else if (state === 'decaying') {
-      this.#maturityPct = Math.max(0, this.#maturityPct - DECAY_RATE * dtSec);
+      this.#maturityPct = Math.max(
+        0,
+        this.#maturityPct - DECAY_RATE * decayRateMult * dtSec,
+      );
     }
 
     return this.#result(false);

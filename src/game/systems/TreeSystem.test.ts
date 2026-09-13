@@ -19,6 +19,11 @@ describe('TreeSystem', () => {
     expect(tree.maturityPct).toBeCloseTo(1.2);
   });
 
+  it('scales growth by tetherGrowthMult', () => {
+    tree.update(1.0, 'tethered', 1.15);
+    expect(tree.maturityPct).toBeCloseTo(1.2 * 1.15);
+  });
+
   it('does not grow during grace', () => {
     tree.update(1.0, 'grace');
     expect(tree.maturityPct).toBe(0);
@@ -28,6 +33,12 @@ describe('TreeSystem', () => {
     tree.deliver(10);
     tree.update(1.0, 'decaying');
     expect(tree.maturityPct).toBeCloseTo(9.4);
+  });
+
+  it('scales decay by decayRateMult', () => {
+    tree.deliver(10);
+    tree.update(1.0, 'decaying', 1, 0.6);
+    expect(tree.maturityPct).toBeCloseTo(10 - 0.6 * 0.6);
   });
 
   it('floors maturity at zero', () => {
