@@ -2,6 +2,7 @@
 import { AegisBadge } from './AegisBadge';
 import { AmmoReadout } from './AmmoReadout';
 import { CarriedCatalystPips } from './CarriedCatalystPips';
+import { ControlsReference } from './ControlsReference';
 import { DashIndicator } from './DashIndicator';
 import { DecayVignette } from './DecayVignette';
 import { DraftModal } from './DraftModal';
@@ -9,6 +10,7 @@ import { GameOverCard } from './GameOverCard';
 import { HealthBar } from './HealthBar';
 import { MaturityGauge } from './MaturityGauge';
 import { PauseModal } from './PauseModal';
+import { ReloadIndicator } from './ReloadIndicator';
 import { ScoreReadout } from './ScoreReadout';
 import { TetherBeacon } from './TetherBeacon';
 import { WaveLabel } from './WaveLabel';
@@ -36,6 +38,8 @@ export function Hud() {
       <div className="absolute bottom-4 left-4 flex flex-col gap-2">
         <AegisBadge />
         <DashIndicator />
+        <ReloadIndicator />
+        <ControlsReference />
       </div>
 
       <div className="absolute right-4 bottom-4">
