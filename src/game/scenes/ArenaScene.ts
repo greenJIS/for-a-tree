@@ -19,6 +19,8 @@ import { FRAME } from '../frames';
 import { BulletPool } from '../entities/BulletPool';
 import { EnemyPool } from '../entities/EnemyPool';
 import { Player } from '../entities/Player';
+import { AmmoSystem } from '../systems/AmmoSystem';
+import type { AmmoState } from '../systems/AmmoSystem';
 import { SpawnDirector, type MutantKind } from '../systems/SpawnDirector';
 import { TetherSystem } from '../systems/TetherSystem';
 import { TreeSystem } from '../systems/TreeSystem';
@@ -37,6 +39,9 @@ export class ArenaScene extends Phaser.Scene {
   #msSinceTick = 0;
   #bullets!: BulletPool;
   #nextShotAtMs = 0;
+  #ammo = new AmmoSystem();
+  #lastEmittedAmmo: AmmoState | null = null;
+  #reloadKey!: Phaser.Input.Keyboard.Key;
   #enemies!: EnemyPool;
   #hp: number = PLAYER.maxHp;
   #invulnUntilMs = 0;
@@ -96,6 +101,11 @@ export class ArenaScene extends Phaser.Scene {
     this.#player = new Player(this, TREE_POS.x, TREE_POS.y);
     this.#bullets = new BulletPool(this, 200);
     this.#enemies = new EnemyPool(this, 60);
+
+    const keyboard = this.input.keyboard;
+    if (keyboard) {
+      this.#reloadKey = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
+    }
 
     this.#startedAtMs = this.time.now;
 
@@ -173,15 +183,6 @@ export class ArenaScene extends Phaser.Scene {
 
     this.#player.update();
 
-    const pointer = this.input.activePointer;
-    if (pointer.leftButtonDown() && this.time.now >= this.#nextShotAtMs) {
-      this.#nextShotAtMs = this.time.now + 1000 / CARBINE.fireRatePerSec;
-      this.#bullets.fire(
-        this.#player.x,
-        this.#player.y,
-        this.#player.sprite.rotation,
-      );
-    }
     this.#bullets.cull();
     this.#enemies.pursue(this.#player.x, this.#player.y);
 
@@ -203,6 +204,41 @@ export class ArenaScene extends Phaser.Scene {
             ? 0xfbbf24
             : 0xf43f5e,
       );
+    }
+
+    const pointer = this.input.activePointer;
+    if (
+      pointer.leftButtonDown() &&
+      this.time.now >= this.#nextShotAtMs &&
+      this.#ammo.tryFire()
+    ) {
+      this.#nextShotAtMs = this.time.now + 1000 / CARBINE.fireRatePerSec;
+      this.#bullets.fire(
+        this.#player.x,
+        this.#player.y,
+        this.#player.sprite.rotation,
+      );
+    }
+
+    if (Phaser.Input.Keyboard.JustDown(this.#reloadKey)) {
+      this.#ammo.startReload();
+    }
+
+    this.#ammo.update(dtSec, state);
+    const ammoState = this.#ammo.state;
+    if (
+      !this.#lastEmittedAmmo ||
+      ammoState.clip !== this.#lastEmittedAmmo.clip ||
+      ammoState.reserve !== this.#lastEmittedAmmo.reserve ||
+      ammoState.reloading !== this.#lastEmittedAmmo.reloading
+    ) {
+      this.#lastEmittedAmmo = ammoState;
+      bus.emit('AMMO_UPDATED', {
+        weaponId: 'carbine',
+        clip: ammoState.clip,
+        clipMax: CARBINE.magSize,
+        reserve: ammoState.reserve,
+      });
     }
 
     const result = this.#tree.update(dtSec, state);
