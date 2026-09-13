@@ -119,14 +119,35 @@ export class ArenaScene extends Phaser.Scene {
   #triggerGeneration(generation: number): void {
     this.#audio.generation();
     this.#aegis.grantCharge(this.#upgrades.aegisCapacity);
+    this.cameras.main.flash(300, 220, 255, 200);
+    this.#playGenerationRing();
+
     if (this.#pausedForDraft) {
       this.#pendingDraftGenerations.push(generation);
     } else {
       this.#pausedForDraft = true;
       this.physics.pause();
-      const cards = this.#upgrades.draw(generation);
-      bus.emit('GENERATION_REACHED', { generation, cards });
+      this.time.delayedCall(500, () => {
+        const cards = this.#upgrades.draw(generation);
+        bus.emit('GENERATION_REACHED', { generation, cards });
+      });
     }
+  }
+
+  #playGenerationRing(): void {
+    const ring = this.add.graphics();
+    ring.setPosition(TREE_POS.x, TREE_POS.y);
+    ring.lineStyle(4, 0x3ddc84, 1);
+    ring.strokeCircle(0, 0, 20);
+    ring.setDepth(50);
+    this.tweens.add({
+      targets: ring,
+      alpha: 0,
+      scale: 7,
+      duration: 500,
+      ease: 'Quad.easeOut',
+      onComplete: () => ring.destroy(),
+    });
   }
 
   #emitAegisStatus(nowMs: number): void {
