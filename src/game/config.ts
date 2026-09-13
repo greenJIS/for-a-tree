@@ -156,3 +156,146 @@ export const CANISTER = {
 
 /** High-frequency bus events emit at 10 Hz. SRS 2.2. */
 export const TICK_INTERVAL_MS = 100;
+
+export const SCATTER = {
+  damage: 10,
+  pelletCount: 6,
+  spreadAngleRad: (28 * Math.PI) / 180,
+  fireRatePerSec: 1.1,
+  magSize: 6,
+  reloadMs: 1600,
+  reserveCap: 48,
+  regenPerSec: 1.2,
+  bulletSpeed: 750,
+  knockback: 220,
+} as const;
+
+export const RAIL = {
+  damage: 120,
+  fireRatePerSec: 0.8,
+  magSize: 3,
+  reloadMs: 2000,
+  reserveCap: 24,
+  regenPerSec: 0.4,
+  bulletSpeed: 1600,
+  knockback: 0,
+} as const;
+
+export const AEGIS = {
+  capacityBase: 1,
+  capacitySecondWind: 2,
+  durationMs: 8000,
+  retaliationDps: 80,
+  knockback: 250,
+} as const;
+
+export const SCORE = {
+  perKill: 50,
+  perHalfMinute: 250,
+  perGeneration: 2500,
+  perCatalystDelivered: 25,
+  storageKey: 'foratree.highscore',
+} as const;
+
+export type UpgradeCardDef = {
+  id: string;
+  name: string;
+  body: string;
+  effect: string;
+  repeatable: boolean;
+};
+
+export const UPGRADE_CARDS: readonly UpgradeCardDef[] = [
+  {
+    id: 'bio-surge',
+    name: 'Bio-Surge',
+    body: '+30% tree maturity immediately.',
+    effect: 'instant-maturity',
+    repeatable: true,
+  },
+  {
+    id: 'deep-roots',
+    name: 'Deep Roots',
+    body: 'Tethered growth rate +15%.',
+    effect: 'tether-growth',
+    repeatable: true,
+  },
+  {
+    id: 'heartwood',
+    name: 'Heartwood',
+    body: 'Untethered decay rate -40%.',
+    effect: 'decay-reduction',
+    repeatable: true,
+  },
+  {
+    id: 'wider-canopy',
+    name: 'Wider Canopy',
+    body: 'Aura radius +30 px.',
+    effect: 'aura-radius',
+    repeatable: true,
+  },
+  {
+    id: 'munitions-loom',
+    name: 'Munitions Loom',
+    body: 'Ammunition regen rate x1.4.',
+    effect: 'ammo-regen',
+    repeatable: true,
+  },
+  {
+    id: 'hollow-point',
+    name: 'Hollow-Point',
+    body: 'All weapon damage +15%.',
+    effect: 'weapon-damage',
+    repeatable: true,
+  },
+  {
+    id: 'kinetic-dampers',
+    name: 'Kinetic Dampers',
+    body: 'Max HP +25 and heal to full.',
+    effect: 'max-hp',
+    repeatable: true,
+  },
+  {
+    id: 'nano-suture-kit',
+    name: 'Nano-Suture Kit',
+    body: 'Restore 50 HP, move speed +8%.',
+    effect: 'heal-speed',
+    repeatable: true,
+  },
+  {
+    id: 'vacuum-coils',
+    name: 'Vacuum Coils',
+    body: 'Magnet radius x2, carry capacity to 5.',
+    effect: 'magnet-carry',
+    repeatable: false,
+  },
+  {
+    id: 'scatter-requisition',
+    name: 'Scatter Requisition',
+    body: 'Unlock Scatter Pulser, fill reserve.',
+    effect: 'unlock-scatter',
+    repeatable: false,
+  },
+  {
+    id: 'rail-requisition',
+    name: 'Rail Requisition',
+    body: 'Unlock Mag-Rail Staker, fill reserve.',
+    effect: 'unlock-rail',
+    repeatable: false,
+  },
+  {
+    id: 'second-wind',
+    name: 'Second Wind',
+    body: 'Aegis battery capacity to 2.',
+    effect: 'aegis-capacity',
+    repeatable: false,
+  },
+  {
+    id: 'rhizome-splice',
+    name: 'Rhizome Splice',
+    body: 'Catalyst values +25%.',
+    effect: 'catalyst-value',
+    repeatable: true,
+  },
+] as const;
+
