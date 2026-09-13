@@ -1291,12 +1291,14 @@ way a loaded player escapes a blockade on the return trip.
 **Files:**
 
 - Modify: `src/game/entities/Player.ts`
-- Modify: `src/game/scenes/ArenaScene.ts`
 
 **Interfaces:**
 
-- Consumes: `DASH` from config; `bus` from `src/game/eventBus.ts`.
-- Produces: `Player.tryDash(): boolean`, `Player.isDashing: boolean`. `ArenaScene` emits `DASH_STATUS`.
+- Consumes: `DASH` from `src/game/config.ts`; `bus` from `src/game/eventBus.ts`; `FRAME` from
+  `src/game/frames.ts`.
+- Produces: `Player.tryDash(moveDir: Phaser.Math.Vector2): boolean`, `Player.isDashing: boolean`.
+  `Player` emits `DASH_STATUS` directly, since it already holds the scene reference needed for
+  timing — no change to `ArenaScene.ts` is needed for this task.
 
 - [ ] **Step 1: Add dash state to the player**
 
