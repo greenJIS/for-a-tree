@@ -104,4 +104,19 @@ describe('WeaponInventory', () => {
     expect(inv.activeAmmo.reloading).toBe(false);
     expect(inv.activeAmmo.clip).toBe(24);
   });
+
+  it('provides scalar getters activeClip, activeReserve, and isReloading', () => {
+    expect(inv.activeClip).toBe(24);
+    expect(inv.activeReserve).toBe(0);
+    expect(inv.isReloading).toBe(false);
+
+    inv.setReserveForTest('carbine', 10);
+    expect(inv.activeReserve).toBe(10);
+
+    inv.tryFire();
+    expect(inv.activeClip).toBe(23);
+
+    inv.startReload();
+    expect(inv.isReloading).toBe(true);
+  });
 });

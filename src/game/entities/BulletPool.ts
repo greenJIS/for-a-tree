@@ -24,6 +24,12 @@ export class BulletPool {
       active: false,
       visible: false,
     });
+
+    for (const child of this.group.getChildren()) {
+      if (isArcadeImage(child)) {
+        child.setData('hitIds', new Set<number>());
+      }
+    }
   }
 
   fireCarbine(x: number, y: number, rotation: number, damageMult = 1): void {
@@ -41,7 +47,6 @@ export class BulletPool {
     bullet.setData('damage', CARBINE.damage * damageMult);
     bullet.setData('knockback', CARBINE.knockback);
     bullet.setData('piercing', false);
-    bullet.setData('hitIds', null);
   }
 
   fireScatter(x: number, y: number, rotation: number, damageMult = 1): void {
@@ -64,7 +69,6 @@ export class BulletPool {
       bullet.setData('damage', SCATTER.damage * damageMult);
       bullet.setData('knockback', SCATTER.knockback);
       bullet.setData('piercing', false);
-      bullet.setData('hitIds', null);
     }
   }
 
@@ -83,7 +87,12 @@ export class BulletPool {
     bullet.setData('damage', RAIL.damage * damageMult);
     bullet.setData('knockback', RAIL.knockback);
     bullet.setData('piercing', true);
-    bullet.setData('hitIds', new Set<number>());
+    const set = bullet.getData('hitIds') as Set<number> | undefined;
+    if (set instanceof Set) {
+      set.clear();
+    } else {
+      bullet.setData('hitIds', new Set<number>());
+    }
   }
 
   /** Backwards compatibility alias for fireCarbine */

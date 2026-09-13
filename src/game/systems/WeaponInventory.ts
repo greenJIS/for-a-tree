@@ -84,6 +84,18 @@ export class WeaponInventory {
     return this.getAmmo(this.#activeId);
   }
 
+  get activeClip(): number {
+    return this.#clips[this.#activeId];
+  }
+
+  get activeReserve(): number {
+    return this.#reserves[this.#activeId];
+  }
+
+  get isReloading(): boolean {
+    return this.#reloadRemainingMs[this.#activeId] > 0;
+  }
+
   getAmmo(id: WeaponId): { clip: number; reserve: number; reloading: boolean } {
     return {
       clip: this.#clips[id],

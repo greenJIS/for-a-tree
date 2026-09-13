@@ -25,7 +25,8 @@ import { BulletPool } from '../entities/BulletPool';
 import { CanisterPool } from '../entities/CanisterPool';
 import { EnemyPool } from '../entities/EnemyPool';
 import { Player } from '../entities/Player';
-import { AegisSystem, type AegisStatus } from '../systems/AegisSystem';
+import { AegisSystem } from '../systems/AegisSystem';
+import { ScoreSystem } from '../systems/ScoreSystem';
 import { UpgradeSystem } from '../systems/UpgradeSystem';
 import { WeaponInventory, type WeaponId } from '../systems/WeaponInventory';
 import { CarrySystem } from '../systems/CarrySystem';
@@ -80,7 +81,10 @@ export class ArenaScene extends Phaser.Scene {
   #aegis = new AegisSystem();
   #aegisSprite!: Phaser.GameObjects.Image;
   #spaceKey?: Phaser.Input.Keyboard.Key;
-  #lastEmittedAegis: AegisStatus | null = null;
+  #lastAegisCharges = -1;
+  #lastAegisCapacity = -1;
+  #lastAegisActive = false;
+  #lastAegisRemainingSec = -1;
   #msSinceAegisTick = 0;
   #enemies!: EnemyPool;
   #canisters!: CanisterPool;
@@ -89,13 +93,15 @@ export class ArenaScene extends Phaser.Scene {
   #hp: number = PLAYER.maxHp;
   #invulnUntilMs = 0;
   #kills = 0;
-  #startedAtMs = 0;
+  #catalystsDeliveredCount = 0;
   #over = false;
   #director = new SpawnDirector();
   #elapsedSec = 0;
   #msSinceDifficultyTick = 0;
   #upgrades = new UpgradeSystem();
+  #scores = new ScoreSystem();
   #pausedForDraft = false;
+  #pendingDraftGenerations: number[] = [];
   #isPaused = false;
 
   get #maxHp(): number {
@@ -106,13 +112,35 @@ export class ArenaScene extends Phaser.Scene {
     return AURA_RADIUS_BASE + this.#upgrades.auraRadiusBonus;
   }
 
-  #onGenerationTriggered(generation: number): void {
+  #triggerGeneration(generation: number): void {
     this.#audio.generation();
     this.#aegis.grantCharge(this.#upgrades.aegisCapacity);
-    const cards = this.#upgrades.draw(generation);
-    this.physics.pause();
-    this.#pausedForDraft = true;
-    bus.emit('GENERATION_REACHED', { generation, cards });
+    if (this.#pausedForDraft) {
+      this.#pendingDraftGenerations.push(generation);
+    } else {
+      this.#pausedForDraft = true;
+      this.physics.pause();
+      const cards = this.#upgrades.draw(generation);
+      bus.emit('GENERATION_REACHED', { generation, cards });
+    }
+  }
+
+  #emitAegisStatus(nowMs: number): void {
+    const charges = this.#aegis.charges;
+    const capacity = this.#upgrades.aegisCapacity;
+    const isAegisActive = this.#aegis.isActive(nowMs);
+    const activeRemainingMs = isAegisActive
+      ? this.#aegis.activeRemainingMs(nowMs)
+      : 0;
+    this.#lastAegisCharges = charges;
+    this.#lastAegisCapacity = capacity;
+    this.#lastAegisActive = isAegisActive;
+    this.#lastAegisRemainingSec = Math.ceil(activeRemainingMs / 1000);
+    bus.emit('AEGIS_STATUS', {
+      charges,
+      capacity,
+      activeRemainingMs,
+    });
   }
 
   constructor() {
@@ -135,13 +163,16 @@ export class ArenaScene extends Phaser.Scene {
     this.#pity = new PityDropSystem();
     this.#director = new SpawnDirector();
     this.#upgrades = new UpgradeSystem();
+    this.#scores = new ScoreSystem();
 
     this.#hp = PLAYER.maxHp;
     this.#invulnUntilMs = 0;
     this.#kills = 0;
+    this.#catalystsDeliveredCount = 0;
     this.#over = false;
     this.#isPaused = false;
     this.#pausedForDraft = false;
+    this.#pendingDraftGenerations = [];
     this.#elapsedSec = 0;
     this.#msSinceTick = 0;
     this.#msSinceAegisTick = 0;
@@ -150,7 +181,10 @@ export class ArenaScene extends Phaser.Scene {
     this.#nextEnemyId = 0;
     this.#lastTetherState = 'tethered';
     this.#lastEmittedAmmo = null;
-    this.#lastEmittedAegis = null;
+    this.#lastAegisCharges = -1;
+    this.#lastAegisCapacity = -1;
+    this.#lastAegisActive = false;
+    this.#lastAegisRemainingSec = -1;
 
     this.physics.resume();
 
@@ -222,8 +256,6 @@ export class ArenaScene extends Phaser.Scene {
       this.#pKey = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
     }
 
-    this.#startedAtMs = this.time.now;
-
     this.physics.add.overlap(
       this.#bullets.group,
       this.#enemies.group,
@@ -294,20 +326,25 @@ export class ArenaScene extends Phaser.Scene {
     });
 
     const activeId = this.#weapons.activeWeaponId;
+    const clip = this.#weapons.activeClip;
     const clipMax = WEAPON_MAG_SIZES[activeId];
+    const reserve = Math.floor(this.#weapons.activeReserve);
+    const reloading = this.#weapons.isReloading;
+    this.#lastEmittedAmmo = {
+      weaponId: activeId,
+      clip,
+      clipMax,
+      reserve,
+      reloading,
+    };
     bus.emit('AMMO_UPDATED', {
       weaponId: activeId,
-      clip: this.#weapons.activeAmmo.clip,
+      clip,
       clipMax,
-      reserve: Math.floor(this.#weapons.activeAmmo.reserve),
+      reserve,
     });
 
-    const initialAegis = this.#aegis.status(
-      this.time.now,
-      this.#upgrades.aegisCapacity,
-    );
-    this.#lastEmittedAegis = initialAegis;
-    bus.emit('AEGIS_STATUS', initialAegis);
+    this.#emitAegisStatus(this.time.now);
 
     bus.emit('SCORE_UPDATED', { score: 0 });
     bus.emit('TREE_GROWTH_TICK', {
@@ -344,7 +381,7 @@ export class ArenaScene extends Phaser.Scene {
       } else if (cardId === 'bio-surge') {
         const result = this.#tree.deliver(UPGRADE_EFFECTS.bioSurgeMaturityPct);
         if (result.generationTriggered) {
-          this.#aegis.grantCharge(this.#upgrades.aegisCapacity);
+          this.#triggerGeneration(result.generation);
         }
       } else if (cardId === 'kinetic-dampers') {
         this.#hp = this.#maxHp;
@@ -375,19 +412,20 @@ export class ArenaScene extends Phaser.Scene {
           cap: this.#upgrades.carryCapacity,
         });
       } else if (cardId === 'second-wind') {
-        const status = this.#aegis.status(
-          this.time.now,
-          this.#upgrades.aegisCapacity,
-        );
-        this.#lastEmittedAegis = status;
-        bus.emit('AEGIS_STATUS', status);
+        this.#emitAegisStatus(this.time.now);
       }
     };
 
     const onResumeFromDraft = () => {
       if (this.#over) return;
-      this.physics.resume();
-      this.#pausedForDraft = false;
+      if (this.#pendingDraftGenerations.length > 0) {
+        const nextGen = this.#pendingDraftGenerations.shift()!;
+        const cards = this.#upgrades.draw(nextGen);
+        bus.emit('GENERATION_REACHED', { generation: nextGen, cards });
+      } else {
+        this.physics.resume();
+        this.#pausedForDraft = false;
+      }
     };
 
     const onBlur = () => {
@@ -451,25 +489,25 @@ export class ArenaScene extends Phaser.Scene {
     this.#aegisSprite.setVisible(isAegisActive);
 
     this.#msSinceAegisTick += delta;
-    const aegisStatus = this.#aegis.status(
-      this.time.now,
-      this.#upgrades.aegisCapacity,
-    );
+    const currentCharges = this.#aegis.charges;
+    const currentCap = this.#upgrades.aegisCapacity;
+    const remainingMs = isAegisActive
+      ? this.#aegis.activeRemainingMs(this.time.now)
+      : 0;
+    const remainingSec = Math.ceil(remainingMs / 1000);
+
     const aegisChanged =
-      !this.#lastEmittedAegis ||
-      this.#lastEmittedAegis.charges !== aegisStatus.charges ||
-      this.#lastEmittedAegis.capacity !== aegisStatus.capacity ||
-      this.#lastEmittedAegis.activeRemainingMs > 0 !==
-        aegisStatus.activeRemainingMs > 0;
+      currentCharges !== this.#lastAegisCharges ||
+      currentCap !== this.#lastAegisCapacity ||
+      isAegisActive !== this.#lastAegisActive ||
+      (isAegisActive && remainingSec !== this.#lastAegisRemainingSec);
 
     if (
       aegisChanged ||
-      (aegisStatus.activeRemainingMs > 0 &&
-        this.#msSinceAegisTick >= TICK_INTERVAL_MS)
+      (isAegisActive && this.#msSinceAegisTick >= TICK_INTERVAL_MS)
     ) {
       this.#msSinceAegisTick = 0;
-      this.#lastEmittedAegis = aegisStatus;
-      bus.emit('AEGIS_STATUS', aegisStatus);
+      this.#emitAegisStatus(this.time.now);
     }
 
     let aliveThreat = 0;
@@ -493,6 +531,13 @@ export class ArenaScene extends Phaser.Scene {
         waveLabel: Math.floor(this.#elapsedSec / 30) + 1,
         aliveEnemies,
       });
+      const currentScore = this.#scores.calculate({
+        kills: this.#kills,
+        elapsedSec: this.#elapsedSec,
+        generations: this.#tree.generation,
+        catalystsDelivered: this.#catalystsDeliveredCount,
+      });
+      bus.emit('SCORE_UPDATED', { score: currentScore });
     }
 
     this.#updateDetonators();
@@ -572,8 +617,9 @@ export class ArenaScene extends Phaser.Scene {
         totalPct * this.#upgrades.catalystValueMult,
       );
       if (result.generationTriggered) {
-        this.#onGenerationTriggered(result.generation);
+        this.#triggerGeneration(result.generation);
       }
+      this.#catalystsDeliveredCount += count;
       this.#audio.deliver();
       this.#player.setSpeedMultiplier(this.#upgrades.moveSpeedMult);
       bus.emit('CATALYSTS_CARRIED', {
@@ -659,27 +705,28 @@ export class ArenaScene extends Phaser.Scene {
 
     this.#weapons.update(dtSec, state, this.#upgrades.ammoRegenMult);
     const activeId = this.#weapons.activeWeaponId;
-    const ammoState = this.#weapons.activeAmmo;
+    const clip = this.#weapons.activeClip;
     const clipMax = WEAPON_MAG_SIZES[activeId];
-    const displayReserve = Math.floor(ammoState.reserve);
+    const displayReserve = Math.floor(this.#weapons.activeReserve);
+    const reloading = this.#weapons.isReloading;
     if (
       !this.#lastEmittedAmmo ||
       this.#lastEmittedAmmo.weaponId !== activeId ||
-      this.#lastEmittedAmmo.clip !== ammoState.clip ||
+      this.#lastEmittedAmmo.clip !== clip ||
       this.#lastEmittedAmmo.clipMax !== clipMax ||
       this.#lastEmittedAmmo.reserve !== displayReserve ||
-      this.#lastEmittedAmmo.reloading !== ammoState.reloading
+      this.#lastEmittedAmmo.reloading !== reloading
     ) {
       this.#lastEmittedAmmo = {
         weaponId: activeId,
-        clip: ammoState.clip,
+        clip,
         clipMax,
         reserve: displayReserve,
-        reloading: ammoState.reloading,
+        reloading,
       };
       bus.emit('AMMO_UPDATED', {
         weaponId: activeId,
-        clip: ammoState.clip,
+        clip,
         clipMax,
         reserve: displayReserve,
       });
@@ -691,6 +738,9 @@ export class ArenaScene extends Phaser.Scene {
       this.#upgrades.tetherGrowthMult,
       this.#upgrades.decayRateMult,
     );
+    if (result.generationTriggered) {
+      this.#triggerGeneration(result.generation);
+    }
     if (result.stalledCrossing) {
       bus.emit('GROWTH_STALLED', { ceilingPct: GROWTH_CEILING });
     }
@@ -748,11 +798,19 @@ export class ArenaScene extends Phaser.Scene {
     this.#carry.clear();
     this.#over = true;
     this.physics.pause();
+    const finalScore = this.#scores.calculate({
+      kills: this.#kills,
+      elapsedSec: this.#elapsedSec,
+      generations: this.#tree.generation,
+      catalystsDelivered: this.#catalystsDeliveredCount,
+    });
+    this.#scores.saveHighScore(finalScore);
+    bus.emit('SCORE_UPDATED', { score: finalScore });
     bus.emit('GAME_OVER', {
-      score: this.#kills * 50,
+      score: finalScore,
       generation: this.#tree.generation,
       kills: this.#kills,
-      survivedMs: this.time.now - this.#startedAtMs,
+      survivedMs: this.#elapsedSec * 1000,
     });
   }
 
@@ -805,10 +863,11 @@ export class ArenaScene extends Phaser.Scene {
           CATALYST_VALUE[tier] * this.#upgrades.catalystValueMult,
         );
         if (result.generationTriggered) {
-          this.#onGenerationTriggered(result.generation);
+          this.#triggerGeneration(result.generation);
         }
         CanisterPool.kill(child);
         this.#audio.deliver();
+        this.#catalystsDeliveredCount += 1;
         bus.emit('CATALYSTS_DELIVERED', {
           totalPct: result.maturityPct,
           count: 1,
