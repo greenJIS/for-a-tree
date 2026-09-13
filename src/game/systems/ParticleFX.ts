@@ -8,6 +8,7 @@
  * so nothing allocates per burst.
  */
 import Phaser from 'phaser';
+import { MUZZLE_OFFSET } from '../config';
 import { FRAME } from '../frames';
 
 export class ParticleFX {
@@ -22,7 +23,7 @@ export class ParticleFX {
         frame: FRAME.particle,
         lifespan: 300,
         speed: { min: 60, max: 160 },
-        scale: { start: 0.5, end: 0 },
+        scale: { start: 0.06, end: 0 },
         quantity: 10,
         tint: 0xdc2626,
         emitting: false,
@@ -34,7 +35,7 @@ export class ParticleFX {
         frame: FRAME.particle,
         lifespan: 500,
         speed: { min: 40, max: 120 },
-        scale: { start: 0.6, end: 0 },
+        scale: { start: 0.07, end: 0 },
         quantity: 12,
         tint: 0x3ddc84,
         emitting: false,
@@ -46,7 +47,7 @@ export class ParticleFX {
         frame: FRAME.particle,
         lifespan: 400,
         speed: { min: 20, max: 60 },
-        scale: { start: 0.4, end: 0 },
+        scale: { start: 0.05, end: 0 },
         alpha: { start: 0.5, end: 0 },
         quantity: 6,
         tint: 0x6b7280,
@@ -59,7 +60,7 @@ export class ParticleFX {
         frame: FRAME.muzzleFlash,
         lifespan: 80,
         speed: 0,
-        scale: { start: 0.6, end: 0 },
+        scale: { start: 0.08, end: 0 },
         quantity: 1,
         tint: 0xffffff,
         blendMode: Phaser.BlendModes.ADD,
@@ -85,11 +86,11 @@ export class ParticleFX {
 
   /** White muzzle flash at the gun tip, offset from the player along their aim. */
   muzzleFlash(x: number, y: number, rotation: number): void {
-    const offset = 24;
+    this.#muzzle.setConfig({ rotate: Phaser.Math.RadToDeg(rotation) });
     this.#muzzle.explode(
       1,
-      x + Math.cos(rotation) * offset,
-      y + Math.sin(rotation) * offset,
+      x + Math.cos(rotation) * MUZZLE_OFFSET,
+      y + Math.sin(rotation) * MUZZLE_OFFSET,
     );
   }
 }
