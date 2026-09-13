@@ -2,6 +2,7 @@
 import { AegisBadge } from './AegisBadge';
 import { AmmoReadout } from './AmmoReadout';
 import { CarriedCatalystPips } from './CarriedCatalystPips';
+import { DashIndicator } from './DashIndicator';
 import { DecayVignette } from './DecayVignette';
 import { DraftModal } from './DraftModal';
 import { GameOverCard } from './GameOverCard';
@@ -32,8 +33,9 @@ export function Hud() {
         <ScoreReadout />
       </div>
 
-      <div className="absolute bottom-4 left-4">
+      <div className="absolute bottom-4 left-4 flex flex-col gap-2">
         <AegisBadge />
+        <DashIndicator />
       </div>
 
       <div className="absolute right-4 bottom-4">

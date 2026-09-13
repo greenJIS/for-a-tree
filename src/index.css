@@ -39,3 +39,12 @@ body {
 canvas {
   display: block;
 }
+
+@keyframes dash-cooldown {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
