@@ -78,7 +78,6 @@ export const SWARMER = {
   hp: 25,
   melee: 6,
   threat: 1,
-  meleeCooldownMs: 800,
   radius: 18,
 } as const;
 

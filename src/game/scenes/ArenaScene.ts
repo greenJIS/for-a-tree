@@ -9,8 +9,8 @@ import {
   BARREN_MARGIN,
   CARBINE,
   GROWTH_CEILING,
+  MELEE_COOLDOWN_MS,
   PLAYER,
-  SWARMER,
   TICK_INTERVAL_MS,
   TREE_POS,
 } from '../config';
@@ -18,6 +18,7 @@ import { FRAME } from '../frames';
 import { BulletPool } from '../entities/BulletPool';
 import { EnemyPool } from '../entities/EnemyPool';
 import { Player } from '../entities/Player';
+import { SpawnDirector, type MutantKind } from '../systems/SpawnDirector';
 import { TetherSystem } from '../systems/TetherSystem';
 import { TreeSystem } from '../systems/TreeSystem';
 import { bus } from '../eventBus';
@@ -41,7 +42,9 @@ export class ArenaScene extends Phaser.Scene {
   #kills = 0;
   #startedAtMs = 0;
   #over = false;
-  #spawnTimer!: Phaser.Time.TimerEvent;
+  #director = new SpawnDirector();
+  #elapsedSec = 0;
+  #msSinceDifficultyTick = 0;
 
   constructor() {
     super('arena');
@@ -92,11 +95,6 @@ export class ArenaScene extends Phaser.Scene {
     this.#player = new Player(this, TREE_POS.x, TREE_POS.y);
     this.#bullets = new BulletPool(this, 200);
     this.#enemies = new EnemyPool(this, 60);
-    this.#spawnTimer = this.time.addEvent({
-      delay: 1500,
-      loop: true,
-      callback: () => this.#spawnAtEdge(),
-    });
 
     this.#startedAtMs = this.time.now;
 
@@ -111,7 +109,9 @@ export class ArenaScene extends Phaser.Scene {
 
         BulletPool.kill(bullet);
 
-        const remaining = EnemyPool.hp(enemy) - CARBINE.damage;
+        const damage =
+          CARBINE.damage * (1 - EnemyPool.ballisticReduction(enemy));
+        const remaining = EnemyPool.hp(enemy) - damage;
         if (remaining <= 0) {
           EnemyPool.kill(enemy);
           this.#kills += 1;
@@ -143,6 +143,31 @@ export class ArenaScene extends Phaser.Scene {
     if (this.#over) return;
 
     const dtSec = delta / 1000;
+    this.#elapsedSec += dtSec;
+
+    let aliveThreat = 0;
+    for (const child of this.#enemies.group.getChildren()) {
+      if (!isArcadeImage(child) || !child.active) continue;
+      aliveThreat += EnemyPool.threat(child);
+    }
+    for (const kind of this.#director.update(dtSec, aliveThreat)) {
+      this.#spawnAtEdge(kind);
+    }
+
+    this.#msSinceDifficultyTick += delta;
+    if (this.#msSinceDifficultyTick >= TICK_INTERVAL_MS) {
+      this.#msSinceDifficultyTick = 0;
+      let aliveEnemies = 0;
+      for (const child of this.#enemies.group.getChildren()) {
+        if (isArcadeImage(child) && child.active) aliveEnemies += 1;
+      }
+      bus.emit('DIFFICULTY_TICK', {
+        elapsedMs: this.#elapsedSec * 1000,
+        waveLabel: Math.floor(this.#elapsedSec / 30) + 1,
+        aliveEnemies,
+      });
+    }
+
     this.#player.update();
 
     const pointer = this.input.activePointer;
@@ -208,9 +233,9 @@ export class ArenaScene extends Phaser.Scene {
     if (now < EnemyPool.nextMeleeAtMs(enemy)) return;
     if (this.#player.isDashing) return;
 
-    EnemyPool.setNextMeleeAtMs(enemy, now + SWARMER.meleeCooldownMs);
+    EnemyPool.setNextMeleeAtMs(enemy, now + MELEE_COOLDOWN_MS);
     this.#invulnUntilMs = now + PLAYER.invulnMs;
-    this.#hp = Math.max(0, this.#hp - SWARMER.melee);
+    this.#hp = Math.max(0, this.#hp - EnemyPool.melee(enemy));
 
     bus.emit('PLAYER_HP_CHANGED', {
       current: this.#hp,
@@ -233,7 +258,6 @@ export class ArenaScene extends Phaser.Scene {
   #endRun(): void {
     this.#over = true;
     this.physics.pause();
-    this.#spawnTimer.remove();
     bus.emit('GAME_OVER', {
       score: this.#kills * 50,
       generation: this.#tree.generation,
@@ -242,7 +266,7 @@ export class ArenaScene extends Phaser.Scene {
     });
   }
 
-  #spawnAtEdge(): void {
+  #spawnAtEdge(kind: MutantKind): void {
     const inset = 24;
     for (let attempt = 0; attempt < 8; attempt += 1) {
       const edge = Phaser.Math.Between(0, 3);
@@ -266,7 +290,7 @@ export class ArenaScene extends Phaser.Scene {
         this.#player.y,
       );
       if (distance >= 120) {
-        this.#enemies.spawn(x, y);
+        this.#enemies.spawn(x, y, kind, this.#elapsedSec);
         return;
       }
     }
