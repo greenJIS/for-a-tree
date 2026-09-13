@@ -983,6 +983,7 @@ export class ArenaScene extends Phaser.Scene {
 
     this.#handleKillDrop(cx, cy);
     EnemyPool.kill(detonator);
+    this.#kills += 1;
     this.#audio.alienSplat();
 
     if (
@@ -1003,6 +1004,7 @@ export class ArenaScene extends Phaser.Scene {
         if (remaining <= 0) {
           this.#handleKillDrop(child.x, child.y);
           EnemyPool.kill(child);
+          this.#kills += 1;
           this.#audio.alienSplat();
         } else {
           EnemyPool.setHp(child, remaining);
