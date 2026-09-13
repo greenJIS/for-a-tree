@@ -169,7 +169,7 @@ export class SoundEffects {
     osc2.frequency.setValueAtTime(55.5, ctx.currentTime);
 
     filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(400, ctx.currentTime);
+    filter.frequency.setValueAtTime(1600, ctx.currentTime);
 
     gain.gain.setValueAtTime(0.08, ctx.currentTime);
 
@@ -191,6 +191,8 @@ export class SoundEffects {
     const ctx = this.#ctx;
     const filter = this.#musicFilter;
     if (!ctx || !filter) return;
+    filter.frequency.cancelScheduledValues(ctx.currentTime);
+    filter.frequency.setValueAtTime(filter.frequency.value, ctx.currentTime);
     filter.frequency.linearRampToValueAtTime(
       active ? 1600 : 400,
       ctx.currentTime + 0.8,

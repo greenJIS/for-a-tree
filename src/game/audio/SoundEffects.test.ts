@@ -12,6 +12,9 @@ describe('SoundEffects', () => {
     it('gracefully no-ops all sound triggers when AudioContext is unavailable', () => {
       const sfx = new SoundEffects();
       expect(() => {
+        sfx.startMusic();
+        sfx.setMusicIntensity(true);
+        sfx.stopMusic();
         sfx.carbine();
         sfx.scatter();
         sfx.shotgun();
@@ -54,14 +57,18 @@ describe('SoundEffects', () => {
 
   describe('with Web Audio API environment', () => {
     type MockParam = {
+      value: number;
       setValueAtTime: ReturnType<typeof vi.fn>;
+      cancelScheduledValues: ReturnType<typeof vi.fn>;
       linearRampToValueAtTime: ReturnType<typeof vi.fn>;
       exponentialRampToValueAtTime: ReturnType<typeof vi.fn>;
     };
 
-    function createMockParam(): MockParam {
+    function createMockParam(initialValue = 0): MockParam {
       return {
+        value: initialValue,
         setValueAtTime: vi.fn(),
+        cancelScheduledValues: vi.fn(),
         linearRampToValueAtTime: vi.fn(),
         exponentialRampToValueAtTime: vi.fn(),
       };
@@ -279,6 +286,53 @@ describe('SoundEffects', () => {
       sfx.play('decay');
       sfx.play('snd_generation');
       expect(mockCtx.createOscillator).toHaveBeenCalled();
+    });
+
+    it('starts music drone with 1600Hz cutoff filter for active combat', () => {
+      const sfx = new SoundEffects();
+      sfx.startMusic();
+
+      expect(mockCtx.createOscillator).toHaveBeenCalledTimes(2);
+      expect(mockCtx.createBiquadFilter).toHaveBeenCalledTimes(1);
+
+      const filter = mockCtx.createBiquadFilter.mock.results[0].value as MockFilter;
+      expect(filter.type).toBe('lowpass');
+      expect(filter.frequency.setValueAtTime).toHaveBeenCalledWith(1600, 10);
+    });
+
+    it('anchors music filter ramp at current value and cancels scheduled values on intensity change', () => {
+      const sfx = new SoundEffects();
+      sfx.startMusic();
+
+      const filter = mockCtx.createBiquadFilter.mock.results[0].value as MockFilter;
+      filter.frequency.value = 1600;
+
+      sfx.setMusicIntensity(false);
+      expect(filter.frequency.cancelScheduledValues).toHaveBeenCalledWith(10);
+      expect(filter.frequency.setValueAtTime).toHaveBeenCalledWith(1600, 10);
+      expect(filter.frequency.linearRampToValueAtTime).toHaveBeenCalledWith(400, 10.8);
+
+      filter.frequency.value = 400;
+      sfx.setMusicIntensity(true);
+      expect(filter.frequency.cancelScheduledValues).toHaveBeenCalledWith(10);
+      expect(filter.frequency.setValueAtTime).toHaveBeenCalledWith(400, 10);
+      expect(filter.frequency.linearRampToValueAtTime).toHaveBeenCalledWith(1600, 10.8);
+    });
+
+    it('stops music cleanly and allows restarting', () => {
+      const sfx = new SoundEffects();
+      sfx.startMusic();
+
+      const osc1 = mockCtx.createOscillator.mock.results[0].value as MockOsc;
+      const osc2 = mockCtx.createOscillator.mock.results[1].value as MockOsc;
+
+      sfx.stopMusic();
+      expect(osc1.stop).toHaveBeenCalled();
+      expect(osc2.stop).toHaveBeenCalled();
+
+      // Subsequent start creates new nodes
+      sfx.startMusic();
+      expect(mockCtx.createOscillator).toHaveBeenCalledTimes(4);
     });
   });
 });

@@ -216,6 +216,7 @@ export class ArenaScene extends Phaser.Scene {
     this.physics.resume();
     this.#audio.stopMusic();
     this.#audio.startMusic();
+    this.#audio.setMusicIntensity(true);
 
     this.input.on('pointerdown', () => this.#audio.resume());
     this.input.keyboard?.on('keydown', () => this.#audio.resume());
