@@ -115,8 +115,9 @@ export class WeaponInventory {
 
   startReload(): void {
     const id = this.#activeId;
-    if (this.#reloadRemainingMs[id] > 0) return;
-    this.#reloadRemainingMs[id] = WEAPON_CONFIGS[id].reloadMs;
+    const cfg = WEAPON_CONFIGS[id];
+    if (this.#reloadRemainingMs[id] > 0 || this.#clips[id] >= cfg.magSize) return;
+    this.#reloadRemainingMs[id] = cfg.reloadMs;
   }
 
   update(dtSec: number, tetherState: TetherState, regenMult = 1): void {

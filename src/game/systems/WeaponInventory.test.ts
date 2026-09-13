@@ -119,4 +119,10 @@ describe('WeaponInventory', () => {
     inv.startReload();
     expect(inv.isReloading).toBe(true);
   });
+
+  it('does nothing when manually reloading a full magazine', () => {
+    expect(inv.activeAmmo.clip).toBe(24); // carbine starts full
+    inv.startReload();
+    expect(inv.activeAmmo.reloading).toBe(false);
+  });
 });
