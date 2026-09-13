@@ -1,6 +1,7 @@
 /** Aegis Pulse Battery status badge. SRS 6.1, bottom-left. */
 import { useEffect, useState } from 'react';
 import { bus } from '../game/eventBus';
+import { HudPanel, type HudPanelTone } from './HudPanel';
 
 type AegisPayload = {
   charges: number;
@@ -32,17 +33,19 @@ export function AegisBadge() {
       ? `[SPACE] AEGIS x${status.charges}`
       : '[SPACE] AEGIS OFFLINE';
 
-  const style = isActive
-    ? 'text-tether font-semibold border-tether/60 bg-tether/20'
+  const tone: HudPanelTone = isActive || isCharged ? 'tether' : 'idle';
+  const textStyle = isActive
+    ? 'text-tether font-semibold'
     : isCharged
-      ? 'text-tether animate-pulse border-tether/40 bg-tether/10'
-      : 'text-white/40 border-sand-800 bg-sand-950/60';
+      ? 'text-tether animate-pulse'
+      : 'text-white/40';
 
   return (
-    <div
-      className={`border px-3 py-1.5 text-xs tracking-widest uppercase transition-colors ${style}`}
+    <HudPanel
+      tone={tone}
+      className={`text-xs tracking-widest uppercase ${textStyle}`}
     >
       {text}
-    </div>
+    </HudPanel>
   );
 }
