@@ -4,6 +4,7 @@
  */
 import Phaser from 'phaser';
 import {
+  ARENA,
   AURA_RADIUS_BASE,
   BARREN_MARGIN,
   CARBINE,
@@ -13,6 +14,7 @@ import {
 } from '../config';
 import { FRAME } from '../frames';
 import { BulletPool } from '../entities/BulletPool';
+import { EnemyPool } from '../entities/EnemyPool';
 import { Player } from '../entities/Player';
 import { TetherSystem } from '../systems/TetherSystem';
 import { TreeSystem } from '../systems/TreeSystem';
@@ -30,6 +32,7 @@ export class ArenaScene extends Phaser.Scene {
   #msSinceTick = 0;
   #bullets!: BulletPool;
   #nextShotAtMs = 0;
+  #enemies!: EnemyPool;
 
   constructor() {
     super('arena');
@@ -79,6 +82,12 @@ export class ArenaScene extends Phaser.Scene {
 
     this.#player = new Player(this, TREE_POS.x, TREE_POS.y);
     this.#bullets = new BulletPool(this, 200);
+    this.#enemies = new EnemyPool(this, 60);
+    this.time.addEvent({
+      delay: 1500,
+      loop: true,
+      callback: () => this.#spawnAtEdge(),
+    });
   }
 
   override update(_time: number, delta: number): void {
@@ -95,6 +104,7 @@ export class ArenaScene extends Phaser.Scene {
       );
     }
     this.#bullets.cull();
+    this.#enemies.pursue(this.#player.x, this.#player.y);
 
     const dist = Phaser.Math.Distance.Between(
       this.#player.x,
@@ -136,6 +146,36 @@ export class ArenaScene extends Phaser.Scene {
         ratePerSec: result.ratePerSec,
         ceilingPct: GROWTH_CEILING,
       });
+    }
+  }
+
+  #spawnAtEdge(): void {
+    const inset = 24;
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      const edge = Phaser.Math.Between(0, 3);
+      const x =
+        edge === 0 || edge === 2
+          ? Phaser.Math.Between(inset, ARENA.width - inset)
+          : edge === 1
+            ? ARENA.width - inset
+            : inset;
+      const y =
+        edge === 1 || edge === 3
+          ? Phaser.Math.Between(inset, ARENA.height - inset)
+          : edge === 0
+            ? inset
+            : ARENA.height - inset;
+
+      const distance = Phaser.Math.Distance.Between(
+        x,
+        y,
+        this.#player.x,
+        this.#player.y,
+      );
+      if (distance >= 120) {
+        this.#enemies.spawn(x, y);
+        return;
+      }
     }
   }
 }
