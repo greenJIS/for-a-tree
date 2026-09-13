@@ -10,6 +10,7 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { bus } from '../game/eventBus';
+import { HudPanel } from './HudPanel';
 
 export function MaturityGauge() {
   const [maturityPct, setMaturityPct] = useState(0);
@@ -48,7 +49,7 @@ export function MaturityGauge() {
   const stalled = maturityPct >= ceilingPct;
 
   return (
-    <div className="flex w-80 flex-col gap-1">
+    <HudPanel className="flex w-80 flex-col gap-1">
       <div className="flex justify-between text-xs tracking-widest uppercase">
         <span className="text-white/70">Maturity</span>
         <span className="text-growth">Gen {generation}</span>
@@ -78,6 +79,6 @@ export function MaturityGauge() {
           <span className="text-white/50">+{ratePerSec.toFixed(2)} %/s</span>
         )}
       </div>
-    </div>
+    </HudPanel>
   );
 }

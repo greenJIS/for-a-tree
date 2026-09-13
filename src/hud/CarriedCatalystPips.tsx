@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { bus } from '../game/eventBus';
 import type { CatalystTier } from '../game/eventBus';
+import { HudPanel } from './HudPanel';
 
 const TIER_COLOR: Record<CatalystTier, string> = {
   silt: 'bg-[#a8875a]',
@@ -25,7 +26,7 @@ export function CarriedCatalystPips() {
   if (cap === 0) return null;
 
   return (
-    <div className="flex gap-1">
+    <HudPanel className="flex gap-1">
       {Array.from({ length: cap }, (_, i) => (
         <div
           key={i}
@@ -34,6 +35,6 @@ export function CarriedCatalystPips() {
           }`}
         />
       ))}
-    </div>
+    </HudPanel>
   );
 }

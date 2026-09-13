@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { bus } from '../game/eventBus';
 import type { TetherState } from '../game/eventBus';
+import { HudPanel } from './HudPanel';
 
 const LABEL: Record<TetherState, string> = {
   tethered: 'Tethered',
@@ -25,8 +26,8 @@ export function TetherBeacon() {
   }, []);
 
   return (
-    <div className={`text-xs tracking-widest uppercase ${STYLE[state]}`}>
+    <HudPanel className={`text-xs tracking-widest uppercase ${STYLE[state]}`}>
       {LABEL[state]}
-    </div>
+    </HudPanel>
   );
 }

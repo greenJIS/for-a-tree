@@ -1,6 +1,7 @@
 /** Weapon, magazine, reserve, and reload indicator. SRS 6.1, bottom-right. */
 import { useEffect, useState } from 'react';
 import { bus } from '../game/eventBus';
+import { HudPanel } from './HudPanel';
 
 type Ammo = {
   weaponId: string;
@@ -32,7 +33,7 @@ export function AmmoReadout() {
   }, []);
 
   return (
-    <div className="flex flex-col items-end gap-1 text-right">
+    <HudPanel className="flex flex-col items-end gap-1 text-right">
       <span className="text-xs tracking-widest text-white/70 uppercase">
         {ammo.weaponId}
       </span>
@@ -45,6 +46,6 @@ export function AmmoReadout() {
           Reloading
         </span>
       )}
-    </div>
+    </HudPanel>
   );
 }

@@ -1,6 +1,7 @@
 /** Current wave indicator in top-centre cluster. SRS 6.1. */
 import { useEffect, useState } from 'react';
 import { bus } from '../game/eventBus';
+import { HudPanel } from './HudPanel';
 
 export function WaveLabel() {
   const [wave, setWave] = useState(1);
@@ -12,8 +13,8 @@ export function WaveLabel() {
   }, []);
 
   return (
-    <div className="text-xs tracking-[0.25em] text-white/70 uppercase">
+    <HudPanel className="text-xs tracking-[0.25em] text-white/70 uppercase">
       WAVE {wave}
-    </div>
+    </HudPanel>
   );
 }

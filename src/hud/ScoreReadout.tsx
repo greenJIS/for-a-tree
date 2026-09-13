@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { bus } from '../game/eventBus';
 import { ScoreSystem } from '../game/systems/ScoreSystem';
+import { HudPanel } from './HudPanel';
 
 export function ScoreReadout() {
   const [score, setScore] = useState(0);
@@ -20,13 +21,13 @@ export function ScoreReadout() {
   const highScore = Math.max(savedHigh, score);
 
   return (
-    <div className="flex flex-col items-end gap-0.5 text-right">
+    <HudPanel className="flex flex-col items-end gap-0.5 text-right">
       <span className="text-xs tracking-widest text-white/50 uppercase">
         HI: {highScore}
       </span>
       <span className="text-sm tracking-widest text-growth uppercase">
         SCORE: {score}
       </span>
-    </div>
+    </HudPanel>
   );
 }
