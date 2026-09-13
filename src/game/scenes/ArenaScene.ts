@@ -13,6 +13,7 @@ import {
   DETONATOR,
   GROWTH_CEILING,
   MELEE_COOLDOWN_MS,
+  MUZZLE_OFFSET,
   PLAYER,
   RAIL,
   SCATTER,
@@ -720,32 +721,31 @@ export class ArenaScene extends Phaser.Scene {
     ) {
       const activeId = this.#weapons.activeWeaponId;
       this.#nextShotAtMs = this.time.now + 1000 / WEAPON_FIRE_RATES[activeId];
-      this.#particles.muzzleFlash(
-        this.#player.x,
-        this.#player.y,
-        this.#player.sprite.rotation,
-      );
+      const rotation = this.#player.sprite.rotation;
+      const muzzleX = this.#player.x + Math.cos(rotation) * MUZZLE_OFFSET;
+      const muzzleY = this.#player.y + Math.sin(rotation) * MUZZLE_OFFSET;
+      this.#particles.muzzleFlash(this.#player.x, this.#player.y, rotation);
       if (activeId === 'carbine') {
         this.#bullets.fireCarbine(
-          this.#player.x,
-          this.#player.y,
-          this.#player.sprite.rotation,
+          muzzleX,
+          muzzleY,
+          rotation,
           this.#upgrades.weaponDamageMult,
         );
         this.#audio.carbine();
       } else if (activeId === 'scatter') {
         this.#bullets.fireScatter(
-          this.#player.x,
-          this.#player.y,
-          this.#player.sprite.rotation,
+          muzzleX,
+          muzzleY,
+          rotation,
           this.#upgrades.weaponDamageMult,
         );
         this.#audio.scatter();
       } else if (activeId === 'rail') {
         this.#bullets.fireRail(
-          this.#player.x,
-          this.#player.y,
-          this.#player.sprite.rotation,
+          muzzleX,
+          muzzleY,
+          rotation,
           this.#upgrades.weaponDamageMult,
         );
         this.#audio.rail();
