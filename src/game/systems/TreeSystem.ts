@@ -76,7 +76,6 @@ export class TreeSystem {
     if (this.#maturityPct >= 100) {
       this.#maturityPct -= 100;
       this.#generation += 1;
-      this.#wasAtCeiling = this.#maturityPct >= GROWTH_CEILING;
       return this.#result(true);
     }
 

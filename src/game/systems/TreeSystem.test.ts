@@ -87,6 +87,19 @@ describe('TreeSystem', () => {
     expect(tree.maturityPct).toBeCloseTo(110);
   });
 
+  it('reports a fresh ceiling crossing when an overflowing delivery lands above it', () => {
+    tree.update(1000, 'decaying');
+    tree.deliver(40);
+    expect(tree.maturityPct).toBeCloseTo(40);
+
+    const result = tree.deliver(130);
+
+    expect(result.generationTriggered).toBe(true);
+    expect(tree.generation).toBe(1);
+    expect(tree.maturityPct).toBeCloseTo(70);
+    expect(result.stalledCrossing).toBe(true);
+  });
+
   it('raises the growth rate 6% per generation', () => {
     tree.update(1000, 'tethered');
     tree.deliver(40);
