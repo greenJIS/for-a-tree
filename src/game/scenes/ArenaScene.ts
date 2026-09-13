@@ -8,6 +8,7 @@ import {
   AURA_RADIUS_BASE,
   BARREN_MARGIN,
   CARBINE,
+  CATALYST_VALUE,
   DETONATOR,
   GROWTH_CEILING,
   MELEE_COOLDOWN_MS,
@@ -22,6 +23,7 @@ import { EnemyPool } from '../entities/EnemyPool';
 import { Player } from '../entities/Player';
 import { AmmoSystem } from '../systems/AmmoSystem';
 import type { AmmoState } from '../systems/AmmoSystem';
+import { CarrySystem } from '../systems/CarrySystem';
 import { PityDropSystem } from '../systems/PityDropSystem';
 import { SpawnDirector, type MutantKind } from '../systems/SpawnDirector';
 import { TetherSystem } from '../systems/TetherSystem';
@@ -46,6 +48,7 @@ export class ArenaScene extends Phaser.Scene {
   #reloadKey!: Phaser.Input.Keyboard.Key;
   #enemies!: EnemyPool;
   #canisters!: CanisterPool;
+  #carry = new CarrySystem();
   #pity = new PityDropSystem();
   #hp: number = PLAYER.maxHp;
   #invulnUntilMs = 0;
@@ -193,7 +196,6 @@ export class ArenaScene extends Phaser.Scene {
 
     this.#bullets.cull();
     this.#enemies.pursue(this.#player.x, this.#player.y);
-    this.#canisters.update(this.#player.x, this.#player.y);
 
     const dist = Phaser.Math.Distance.Between(
       this.#player.x,
@@ -214,6 +216,20 @@ export class ArenaScene extends Phaser.Scene {
             : 0xf43f5e,
       );
     }
+
+    if (state === 'tethered' && this.#carry.count > 0) {
+      const { totalPct, count } = this.#carry.deliverAll();
+      const result = this.#tree.deliver(totalPct);
+      this.#player.setSpeedMultiplier(1);
+      bus.emit('CATALYSTS_CARRIED', { tiers: [], cap: 3 });
+      bus.emit('CATALYSTS_DELIVERED', {
+        totalPct: result.maturityPct,
+        count,
+      });
+    }
+
+    this.#canisters.update(this.#player.x, this.#player.y);
+    this.#handleCanisterPickups(state);
 
     const pointer = this.input.activePointer;
     if (
@@ -304,6 +320,7 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   #endRun(): void {
+    this.#carry.clear();
     this.#over = true;
     this.physics.pause();
     bus.emit('GAME_OVER', {
@@ -334,6 +351,48 @@ export class ArenaScene extends Phaser.Scene {
     if (!tier) return;
 
     this.#canisters.eject(killX, killY, TREE_POS.x, TREE_POS.y, tier);
+  }
+
+  /**
+   * A canister that reaches the player is picked up. While tethered it
+   * cashes in immediately, with no carry step -- SRS 3.3. Otherwise it
+   * joins the carry stack, capped at 3, and the player's speed multiplier
+   * updates to reflect the new weight.
+   */
+  #handleCanisterPickups(state: TetherState): void {
+    for (const child of this.#canisters.group.getChildren()) {
+      if (!(child instanceof Phaser.GameObjects.Image) || !child.active)
+        continue;
+      if (!child.getData('settled')) continue;
+
+      const dist = Phaser.Math.Distance.Between(
+        child.x,
+        child.y,
+        this.#player.x,
+        this.#player.y,
+      );
+      if (dist > 24) continue;
+
+      const tier = CanisterPool.tier(child);
+
+      if (state === 'tethered') {
+        const result = this.#tree.deliver(CATALYST_VALUE[tier]);
+        CanisterPool.kill(child);
+        bus.emit('CATALYSTS_DELIVERED', {
+          totalPct: result.maturityPct,
+          count: 1,
+        });
+        continue;
+      }
+
+      if (!this.#carry.add(tier)) continue;
+      CanisterPool.kill(child);
+      this.#player.setSpeedMultiplier(this.#carry.speedMultiplier());
+      bus.emit('CATALYSTS_CARRIED', {
+        tiers: this.#carry.tiers,
+        cap: 3,
+      });
+    }
   }
 
   #spawnAtEdge(kind: MutantKind): void {

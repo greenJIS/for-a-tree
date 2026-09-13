@@ -21,6 +21,7 @@ export class Player {
   #dashReadyAtMs = 0;
   #dashVector = new Phaser.Math.Vector2(0, 0);
   #shiftKey!: Phaser.Input.Keyboard.Key;
+  #speedMultiplier = 1;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     this.#scene = scene;
@@ -60,6 +61,10 @@ export class Player {
 
   get isDashing(): boolean {
     return this.#scene.time.now < this.#dashUntilMs;
+  }
+
+  setSpeedMultiplier(mult: number): void {
+    this.#speedMultiplier = mult;
   }
 
   /**
@@ -135,8 +140,8 @@ export class Player {
       );
     } else {
       this.sprite.setVelocity(
-        dir.x * PLAYER.moveSpeed,
-        dir.y * PLAYER.moveSpeed,
+        dir.x * PLAYER.moveSpeed * this.#speedMultiplier,
+        dir.y * PLAYER.moveSpeed * this.#speedMultiplier,
       );
     }
 
