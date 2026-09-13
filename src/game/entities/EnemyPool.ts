@@ -55,8 +55,10 @@ const STATS: Record<MutantKind, Stats> = {
 
 export class EnemyPool {
   readonly group: Phaser.Physics.Arcade.Group;
+  readonly #scene: Phaser.Scene;
 
   constructor(scene: Phaser.Scene, size: number) {
+    this.#scene = scene;
     this.group = scene.physics.add.group({
       defaultKey: 'sheet',
       defaultFrame: FRAME.swarmer,
@@ -86,7 +88,9 @@ export class EnemyPool {
     const hpMult = 1 + DIRECTOR.hpRampPer60s * rampSteps;
     const dmgMult = 1 + DIRECTOR.dmgRampPer60s * rampSteps;
 
+    this.#scene.tweens.killTweensOf(enemy);
     enemy.enableBody(true, x, y, true, true);
+    enemy.setAlpha(1);
     enemy.setFrame(stats.frame);
     enemy.setDisplaySize(stats.displaySize, stats.displaySize);
     enemy.clearTint();
