@@ -127,6 +127,7 @@ export class ArenaScene extends Phaser.Scene {
     } else {
       this.#pausedForDraft = true;
       this.physics.pause();
+      this.#audio.setMusicIntensity(false);
       this.time.delayedCall(500, () => {
         const cards = this.#upgrades.draw(generation);
         bus.emit('GENERATION_REACHED', { generation, cards });
@@ -213,6 +214,8 @@ export class ArenaScene extends Phaser.Scene {
     this.#lastAegisRemainingSec = -1;
 
     this.physics.resume();
+    this.#audio.stopMusic();
+    this.#audio.startMusic();
 
     this.input.on('pointerdown', () => this.#audio.resume());
     this.input.keyboard?.on('keydown', () => this.#audio.resume());
@@ -464,6 +467,7 @@ export class ArenaScene extends Phaser.Scene {
       } else {
         this.physics.resume();
         this.#pausedForDraft = false;
+        this.#audio.setMusicIntensity(true);
       }
     };
 
@@ -478,8 +482,10 @@ export class ArenaScene extends Phaser.Scene {
       this.#isPaused = !this.#isPaused;
       if (this.#isPaused) {
         this.physics.pause();
+        this.#audio.setMusicIntensity(false);
       } else {
         this.physics.resume();
+        this.#audio.setMusicIntensity(true);
       }
     };
 

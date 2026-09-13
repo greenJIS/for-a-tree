@@ -34,6 +34,9 @@ export class SoundEffects {
   #ctx: AudioContext | null = null;
   #masterGain: GainNode | null = null;
   #noiseBuffer: AudioBuffer | null = null;
+  #musicOsc1: OscillatorNode | null = null;
+  #musicOsc2: OscillatorNode | null = null;
+  #musicFilter: BiquadFilterNode | null = null;
   #volume = 0.5;
   #muted = false;
 
@@ -143,6 +146,63 @@ export class SoundEffects {
     if (ctx && ctx.state === 'suspended') {
       void ctx.resume();
     }
+  }
+
+  /**
+   * Looping dark drone: two slightly detuned low sawtooths through a
+   * lowpass filter. SRS 7. Filter cutoff is automated by
+   * setMusicIntensity rather than swapping tracks.
+   */
+  startMusic(): void {
+    const ctx = this.#init();
+    const masterGain = this.#masterGain;
+    if (!ctx || !masterGain || this.#musicOsc1) return;
+
+    const osc1 = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
+    const filter = ctx.createBiquadFilter();
+    const gain = ctx.createGain();
+
+    osc1.type = 'sawtooth';
+    osc1.frequency.setValueAtTime(55, ctx.currentTime);
+    osc2.type = 'sawtooth';
+    osc2.frequency.setValueAtTime(55.5, ctx.currentTime);
+
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(400, ctx.currentTime);
+
+    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+
+    osc1.connect(filter);
+    osc2.connect(filter);
+    filter.connect(gain);
+    gain.connect(masterGain);
+
+    osc1.start();
+    osc2.start();
+
+    this.#musicOsc1 = osc1;
+    this.#musicOsc2 = osc2;
+    this.#musicFilter = filter;
+  }
+
+  /** Brightens the drone during combat, darkens it during pause/draft. */
+  setMusicIntensity(active: boolean): void {
+    const ctx = this.#ctx;
+    const filter = this.#musicFilter;
+    if (!ctx || !filter) return;
+    filter.frequency.linearRampToValueAtTime(
+      active ? 1600 : 400,
+      ctx.currentTime + 0.8,
+    );
+  }
+
+  stopMusic(): void {
+    this.#musicOsc1?.stop();
+    this.#musicOsc2?.stop();
+    this.#musicOsc1 = null;
+    this.#musicOsc2 = null;
+    this.#musicFilter = null;
   }
 
   /**
