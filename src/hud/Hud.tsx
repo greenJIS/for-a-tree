@@ -20,19 +20,16 @@ export function Hud() {
     <div className="pointer-events-none absolute inset-0 z-20">
       <DecayVignette />
 
-      <div className="absolute top-4 left-4">
+      <div className="absolute top-4 left-4 flex flex-col gap-2">
+        <MaturityGauge />
         <HealthBar />
       </div>
 
-      <div className="absolute top-4 left-1/2 flex -translate-x-1/2 flex-col items-center gap-2">
-        <MaturityGauge />
+      <div className="absolute top-4 right-4 flex flex-col items-end gap-2">
+        <ScoreReadout />
         <TetherBeacon />
         <CarriedCatalystPips />
         <WaveLabel />
-      </div>
-
-      <div className="absolute top-4 right-4">
-        <ScoreReadout />
       </div>
 
       <div className="absolute bottom-4 left-4 flex flex-col gap-2">

@@ -12,7 +12,7 @@
 export const ARENA = { width: 1280, height: 720 } as const;
 
 /** Tree anchor and player spawn. SRS 2.3. */
-export const TREE_POS = { x: 400, y: 360 } as const;
+export const TREE_POS = { x: 640, y: 360 } as const;
 
 /** Aura radius before draft cards. SRS 3.2. */
 export const AURA_RADIUS_BASE = 220;
@@ -78,7 +78,7 @@ export const CARBINE = {
 
 /** E-01 Dune Swarmer. SRS 4.3. */
 export const SWARMER = {
-  speed: 180,
+  speed: 55,
   hp: 25,
   melee: 6,
   threat: 1,
@@ -90,7 +90,7 @@ export const MELEE_COOLDOWN_MS = 800;
 
 /** E-02 Carapace Brute. SRS 4.3. */
 export const BRUTE = {
-  speed: 75,
+  speed: 25,
   hp: 120,
   melee: 20,
   threat: 4,
@@ -100,7 +100,7 @@ export const BRUTE = {
 
 /** E-03 Bio-Detonator. SRS 4.3. */
 export const DETONATOR = {
-  speed: 130,
+  speed: 40,
   hp: 35,
   melee: 40,
   threat: 2,
@@ -318,4 +318,3 @@ export const UPGRADE_CARDS: readonly UpgradeCardDef[] = [
     repeatable: true,
   },
 ] as const;
-
