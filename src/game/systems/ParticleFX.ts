@@ -17,47 +17,55 @@ export class ParticleFX {
   readonly #muzzle: Phaser.GameObjects.Particles.ParticleEmitter;
 
   constructor(scene: Phaser.Scene) {
-    this.#splatter = scene.add.particles(0, 0, 'sheet', {
-      frame: FRAME.particle,
-      lifespan: 300,
-      speed: { min: 60, max: 160 },
-      scale: { start: 0.5, end: 0 },
-      quantity: 10,
-      tint: 0xdc2626,
-      emitting: false,
-    });
+    this.#splatter = scene.add
+      .particles(0, 0, 'sheet', {
+        frame: FRAME.particle,
+        lifespan: 300,
+        speed: { min: 60, max: 160 },
+        scale: { start: 0.5, end: 0 },
+        quantity: 10,
+        tint: 0xdc2626,
+        emitting: false,
+      })
+      .setDepth(20);
 
-    this.#spore = scene.add.particles(0, 0, 'sheet', {
-      frame: FRAME.particle,
-      lifespan: 500,
-      speed: { min: 40, max: 120 },
-      scale: { start: 0.6, end: 0 },
-      quantity: 12,
-      tint: 0x3ddc84,
-      emitting: false,
-    });
+    this.#spore = scene.add
+      .particles(0, 0, 'sheet', {
+        frame: FRAME.particle,
+        lifespan: 500,
+        speed: { min: 40, max: 120 },
+        scale: { start: 0.6, end: 0 },
+        quantity: 12,
+        tint: 0x3ddc84,
+        emitting: false,
+      })
+      .setDepth(20);
 
-    this.#dust = scene.add.particles(0, 0, 'sheet', {
-      frame: FRAME.particle,
-      lifespan: 400,
-      speed: { min: 20, max: 60 },
-      scale: { start: 0.4, end: 0 },
-      alpha: { start: 0.5, end: 0 },
-      quantity: 6,
-      tint: 0x6b7280,
-      emitting: false,
-    });
+    this.#dust = scene.add
+      .particles(0, 0, 'sheet', {
+        frame: FRAME.particle,
+        lifespan: 400,
+        speed: { min: 20, max: 60 },
+        scale: { start: 0.4, end: 0 },
+        alpha: { start: 0.5, end: 0 },
+        quantity: 6,
+        tint: 0x6b7280,
+        emitting: false,
+      })
+      .setDepth(20);
 
-    this.#muzzle = scene.add.particles(0, 0, 'sheet', {
-      frame: FRAME.muzzleFlash,
-      lifespan: 80,
-      speed: 0,
-      scale: { start: 0.6, end: 0 },
-      quantity: 1,
-      tint: 0xffffff,
-      blendMode: Phaser.BlendModes.ADD,
-      emitting: false,
-    });
+    this.#muzzle = scene.add
+      .particles(0, 0, 'sheet', {
+        frame: FRAME.muzzleFlash,
+        lifespan: 80,
+        speed: 0,
+        scale: { start: 0.6, end: 0 },
+        quantity: 1,
+        tint: 0xffffff,
+        blendMode: Phaser.BlendModes.ADD,
+        emitting: false,
+      })
+      .setDepth(20);
   }
 
   /** Red death splatter. Called on every enemy kill. */

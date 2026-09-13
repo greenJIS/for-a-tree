@@ -204,6 +204,7 @@ export class SoundEffects {
     this.#musicOsc2?.stop();
     this.#musicOsc1 = null;
     this.#musicOsc2 = null;
+    this.#musicFilter?.disconnect();
     this.#musicFilter = null;
   }
 

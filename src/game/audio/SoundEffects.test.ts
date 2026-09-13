@@ -28,6 +28,7 @@ describe('SoundEffects', () => {
         sfx.decayWarn();
         sfx.decay();
         sfx.generation();
+        sfx.growthStalled();
         sfx.play('carbine');
         sfx.resume();
       }).not.toThrow();
@@ -91,6 +92,7 @@ describe('SoundEffects', () => {
       type: string;
       frequency: MockParam;
       connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
     };
 
     type MockBufferSource = {
@@ -135,6 +137,7 @@ describe('SoundEffects', () => {
           type: 'lowpass',
           frequency: createMockParam(),
           connect: vi.fn(),
+          disconnect: vi.fn(),
         })),
         createBuffer: vi.fn((channels: number, length: number) => ({
           numberOfChannels: channels,
@@ -325,10 +328,12 @@ describe('SoundEffects', () => {
 
       const osc1 = mockCtx.createOscillator.mock.results[0].value as MockOsc;
       const osc2 = mockCtx.createOscillator.mock.results[1].value as MockOsc;
+      const filter = mockCtx.createBiquadFilter.mock.results[0].value as MockFilter;
 
       sfx.stopMusic();
       expect(osc1.stop).toHaveBeenCalled();
       expect(osc2.stop).toHaveBeenCalled();
+      expect(filter.disconnect).toHaveBeenCalled();
 
       // Subsequent start creates new nodes
       sfx.startMusic();

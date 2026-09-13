@@ -1,8 +1,9 @@
 /** Dash cooldown indicator. Delta spec 7.2, bottom-left beside Aegis. */
 import { useEffect, useState } from 'react';
 import { bus } from '../game/eventBus';
+import type { GameEvents } from '../game/eventBus';
 
-type DashPayload = { cooldownRemainingMs: number; ready: boolean };
+type DashPayload = GameEvents['DASH_STATUS'];
 
 export function DashIndicator() {
   const [ready, setReady] = useState(true);
