@@ -7,16 +7,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 "For a Tree" — a top-down sci-fi survival action game for desktop browsers. Hackathon scope:
 solo developer, 36 hours, art already complete.
 
-**The repository is pre-implementation.** The specification is finished and the shell builds;
-the Phaser engine is not yet mounted. `src/App.tsx` renders a placeholder over an empty
-`#phaser-root`.
+**The core loop is implemented and playable.** Player, tree/maturity, tether/grace, weapons,
+mutants, spawn director, draft upgrades, HUD, pause/restart, and procedural audio are mounted
+and wired through the event bus. Ongoing work is a polish pass — see
+`docs/superpowers/specs/2026-09-13-polish-pass-design.md` for the current punch list.
 
-## The SRS is the source of truth
+## The SRS and the loop-correction delta are the source of truth
 
 `docs/For_a_Tree_SRS.md` (v2.0) is authoritative for every number, formula, entity stat, event
 name, and scope decision. Read the relevant section before implementing a system, and do not
 invent balance values — if a value is missing, it is a spec gap worth raising, not a judgement
 call to make silently.
+
+`docs/superpowers/specs/2026-09-13-for-a-tree-loop-correction-design.md` is a delta against the
+SRS and **wins where the two disagree** — it governs the growth ceiling, dash, barren zone, and
+grace-as-meter mechanics, none of which read correctly from the SRS alone.
 
 Section 11 is a change log from v1.2 explaining _why_ eighteen earlier decisions were reversed.
 Consult it before "restoring" something that looks missing: Bio-Scrap, the Arc Welder, the
