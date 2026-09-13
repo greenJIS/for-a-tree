@@ -40,11 +40,37 @@ this.physics.add.overlap(
 ```
 
 Change `physics.add.overlap` to `physics.add.collider`, same callback
-unchanged. Arcade's collider fires the callback on contact each step *before*
-separating the bodies, so melee still triggers every step contact occurs
-(existing `nextMeleeAtMs` cooldown in `#takeMeleeFrom` already gates damage
-cadence — no change there). The body is now also solid: enemies can no longer
-occupy the same space as the player.
+unchanged, plus a `processCallback` that suppresses collision entirely while
+the player is dashing:
+
+```ts
+this.physics.add.collider(
+  this.#player.sprite,
+  this.#enemies.group,
+  (_playerObj, enemyObj) => {
+    if (!isArcadeImage(enemyObj)) return;
+    this.#takeMeleeFrom(enemyObj);
+  },
+  () => !this.#player.isDashing,
+);
+```
+
+Arcade's collider fires the callback on contact each step *before* separating
+the bodies, so melee still triggers every step contact occurs (existing
+`nextMeleeAtMs` cooldown in `#takeMeleeFrom` already gates damage cadence — no
+change there). The body is now also solid: enemies can no longer occupy the
+same space as the player.
+
+**Dash must stay a pass-through.** The loop-correction spec (§3.1) frames dash
+as the crowd-escape tool — "dashing through a crowd" is the explicit intended
+use. A plain solid collider would physically stop the player at an enemy's
+edge mid-dash, silently breaking that mechanic. The `processCallback` above
+(`() => !this.#player.isDashing`) skips both separation and the melee callback
+while dashing, so the player passes through enemies during the dash window
+exactly as before this change. This doesn't duplicate the existing
+`isDashing` check inside `#takeMeleeFrom` — that check stops damage even on a
+stray non-dash contact right at dash's edge; the processCallback stops the
+*physical* block, a separate effect.
 
 ### Player body: not pushable
 
