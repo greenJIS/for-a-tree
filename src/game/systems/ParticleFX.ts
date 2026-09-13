@@ -86,7 +86,7 @@ export class ParticleFX {
 
   /** White muzzle flash at the gun tip, offset from the player along their aim. */
   muzzleFlash(x: number, y: number, rotation: number): void {
-    this.#muzzle.setConfig({ rotate: Phaser.Math.RadToDeg(rotation) });
+    this.#muzzle.particleRotate = Phaser.Math.RadToDeg(rotation);
     this.#muzzle.explode(
       1,
       x + Math.cos(rotation) * MUZZLE_OFFSET,
