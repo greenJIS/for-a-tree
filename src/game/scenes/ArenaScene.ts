@@ -72,6 +72,8 @@ export class ArenaScene extends Phaser.Scene {
   #key1?: Phaser.Input.Keyboard.Key;
   #key2?: Phaser.Input.Keyboard.Key;
   #key3?: Phaser.Input.Keyboard.Key;
+  #escKey?: Phaser.Input.Keyboard.Key;
+  #pKey?: Phaser.Input.Keyboard.Key;
   #nextEnemyId = 0;
   #aegis = new AegisSystem();
   #aegisSprite!: Phaser.GameObjects.Image;
@@ -92,6 +94,7 @@ export class ArenaScene extends Phaser.Scene {
   #msSinceDifficultyTick = 0;
   #upgrades = new UpgradeSystem();
   #pausedForDraft = false;
+  #isPaused = false;
 
   get #maxHp(): number {
     return PLAYER.maxHp + this.#upgrades.maxHpBonus;
@@ -121,6 +124,33 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.#tether = new TetherSystem();
+    this.#tree = new TreeSystem();
+    this.#weapons = new WeaponInventory();
+    this.#aegis = new AegisSystem();
+    this.#carry = new CarrySystem();
+    this.#pity = new PityDropSystem();
+    this.#director = new SpawnDirector();
+    this.#upgrades = new UpgradeSystem();
+
+    this.#hp = PLAYER.maxHp;
+    this.#invulnUntilMs = 0;
+    this.#kills = 0;
+    this.#over = false;
+    this.#isPaused = false;
+    this.#pausedForDraft = false;
+    this.#elapsedSec = 0;
+    this.#msSinceTick = 0;
+    this.#msSinceAegisTick = 0;
+    this.#msSinceDifficultyTick = 0;
+    this.#nextShotAtMs = 0;
+    this.#nextEnemyId = 0;
+    this.#lastTetherState = 'tethered';
+    this.#lastEmittedAmmo = null;
+    this.#lastEmittedAegis = null;
+
+    this.physics.resume();
+
     this.cameras.main.setBackgroundColor('#1a1410');
 
     // Barren ring first, so the bright aura ring draws over it.
@@ -182,6 +212,8 @@ export class ArenaScene extends Phaser.Scene {
       this.#key1 = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ONE);
       this.#key2 = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.TWO);
       this.#key3 = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.THREE);
+      this.#escKey = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+      this.#pKey = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
     }
 
     this.#startedAtMs = this.time.now;
@@ -254,12 +286,39 @@ export class ArenaScene extends Phaser.Scene {
       unlocked: this.#weapons.unlockedIds,
     });
 
+    const activeId = this.#weapons.activeWeaponId;
+    const clipMax = WEAPON_MAG_SIZES[activeId];
+    bus.emit('AMMO_UPDATED', {
+      weaponId: activeId,
+      clip: this.#weapons.activeAmmo.clip,
+      clipMax,
+      reserve: Math.floor(this.#weapons.activeAmmo.reserve),
+    });
+
     const initialAegis = this.#aegis.status(
       this.time.now,
       this.#upgrades.aegisCapacity,
     );
     this.#lastEmittedAegis = initialAegis;
     bus.emit('AEGIS_STATUS', initialAegis);
+
+    bus.emit('SCORE_UPDATED', { score: 0 });
+    bus.emit('TREE_GROWTH_TICK', {
+      maturityPct: 0,
+      generation: 0,
+      ratePerSec: 0,
+      ceilingPct: GROWTH_CEILING,
+    });
+    bus.emit('TETHER_STATE_CHANGED', { state: 'tethered' });
+    bus.emit('CATALYSTS_CARRIED', {
+      tiers: [],
+      cap: this.#upgrades.carryCapacity,
+    });
+    bus.emit('DIFFICULTY_TICK', {
+      elapsedMs: 0,
+      waveLabel: 1,
+      aliveEnemies: 0,
+    });
 
     const onApplyUpgrade = ({ cardId }: { cardId: string }) => {
       this.#upgrades.apply(cardId);
@@ -324,17 +383,51 @@ export class ArenaScene extends Phaser.Scene {
       this.#pausedForDraft = false;
     };
 
+    const onBlur = () => {
+      if (this.#over || this.#pausedForDraft || this.#isPaused) return;
+      bus.emit('TOGGLE_PAUSE');
+    };
+    window.addEventListener('blur', onBlur);
+
+    const onTogglePause = () => {
+      if (this.#over || this.#pausedForDraft) return;
+      this.#isPaused = !this.#isPaused;
+      if (this.#isPaused) {
+        this.physics.pause();
+      } else {
+        this.physics.resume();
+      }
+    };
+
+    const onRestartSimulation = () => {
+      this.scene.restart();
+    };
+
     bus.on('APPLY_UPGRADE_SELECTION', onApplyUpgrade);
     bus.on('RESUME_FROM_DRAFT', onResumeFromDraft);
+    bus.on('TOGGLE_PAUSE', onTogglePause);
+    bus.on('RESTART_SIMULATION', onRestartSimulation);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      window.removeEventListener('blur', onBlur);
       bus.off('APPLY_UPGRADE_SELECTION', onApplyUpgrade);
       bus.off('RESUME_FROM_DRAFT', onResumeFromDraft);
+      bus.off('TOGGLE_PAUSE', onTogglePause);
+      bus.off('RESTART_SIMULATION', onRestartSimulation);
     });
   }
 
   override update(_time: number, delta: number): void {
-    if (this.#over || this.#pausedForDraft) return;
+    if (!this.#over && !this.#pausedForDraft) {
+      if (
+        (this.#escKey && Phaser.Input.Keyboard.JustDown(this.#escKey)) ||
+        (this.#pKey && Phaser.Input.Keyboard.JustDown(this.#pKey))
+      ) {
+        bus.emit('TOGGLE_PAUSE');
+      }
+    }
+
+    if (this.#over || this.#pausedForDraft || this.#isPaused) return;
 
     const dtSec = delta / 1000;
     this.#elapsedSec += dtSec;

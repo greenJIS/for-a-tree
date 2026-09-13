@@ -7,6 +7,7 @@ import { DraftModal } from './DraftModal';
 import { GameOverCard } from './GameOverCard';
 import { HealthBar } from './HealthBar';
 import { MaturityGauge } from './MaturityGauge';
+import { PauseModal } from './PauseModal';
 import { ScoreReadout } from './ScoreReadout';
 import { TetherBeacon } from './TetherBeacon';
 import { WaveLabel } from './WaveLabel';
@@ -41,6 +42,7 @@ export function Hud() {
 
       <DraftModal />
       <GameOverCard />
+      <PauseModal />
     </div>
   );
 }
