@@ -2,7 +2,13 @@
  * 13-card upgrade pool, weighted draws on Generation, and modifier stack.
  * SRS 5.2, 5.3, amended by delta spec 8 (Rhizome Splice).
  */
-import { UPGRADE_CARDS, type UpgradeCardDef } from '../config';
+import {
+  AEGIS,
+  CARRY,
+  UPGRADE_CARDS,
+  UPGRADE_EFFECTS,
+  type UpgradeCardDef,
+} from '../config';
 import type { UpgradeCard } from '../eventBus';
 
 export class UpgradeSystem {
@@ -73,47 +79,71 @@ export class UpgradeSystem {
   }
 
   get tetherGrowthMult(): number {
-    return 1 + 0.15 * this.count('deep-roots');
+    return (
+      1 + UPGRADE_EFFECTS.deepRootsTetherGrowthPerCopy * this.count('deep-roots')
+    );
   }
 
   get decayRateMult(): number {
-    return Math.pow(0.6, this.count('heartwood'));
+    return Math.pow(
+      UPGRADE_EFFECTS.heartwoodDecayFactorPerCopy,
+      this.count('heartwood'),
+    );
   }
 
   get auraRadiusBonus(): number {
-    return 30 * this.count('wider-canopy');
+    return UPGRADE_EFFECTS.widerCanopyAuraRadiusPx * this.count('wider-canopy');
   }
 
   get ammoRegenMult(): number {
-    return Math.pow(1.4, this.count('munitions-loom'));
+    return Math.pow(
+      UPGRADE_EFFECTS.munitionsLoomRegenMultPerCopy,
+      this.count('munitions-loom'),
+    );
   }
 
   get weaponDamageMult(): number {
-    return 1 + 0.15 * this.count('hollow-point');
+    return (
+      1 + UPGRADE_EFFECTS.hollowPointDamageMultPerCopy * this.count('hollow-point')
+    );
   }
 
   get maxHpBonus(): number {
-    return 25 * this.count('kinetic-dampers');
+    return (
+      UPGRADE_EFFECTS.kineticDampersMaxHpBonus * this.count('kinetic-dampers')
+    );
   }
 
   get moveSpeedMult(): number {
-    return 1 + 0.08 * this.count('nano-suture-kit');
+    return (
+      1 +
+      UPGRADE_EFFECTS.nanoSutureMoveSpeedBonus * this.count('nano-suture-kit')
+    );
   }
 
   get magnetRadiusMult(): number {
-    return this.count('vacuum-coils') > 0 ? 2 : 1;
+    return this.count('vacuum-coils') > 0
+      ? UPGRADE_EFFECTS.vacuumCoilsMagnetMult
+      : 1;
   }
 
   get carryCapacity(): number {
-    return this.count('vacuum-coils') > 0 ? 5 : 3;
+    return this.count('vacuum-coils') > 0
+      ? UPGRADE_EFFECTS.vacuumCoilsCarryCap
+      : CARRY.capacityBase;
   }
 
   get catalystValueMult(): number {
-    return 1 + 0.25 * this.count('rhizome-splice');
+    return (
+      1 +
+      UPGRADE_EFFECTS.rhizomeSpliceCatalystBonus * this.count('rhizome-splice')
+    );
   }
 
   get aegisCapacity(): number {
-    return this.count('second-wind') > 0 ? 2 : 1;
+    return this.count('second-wind') > 0
+      ? UPGRADE_EFFECTS.secondWindAegisCap
+      : AEGIS.capacityBase;
   }
 
   get isScatterUnlocked(): boolean {

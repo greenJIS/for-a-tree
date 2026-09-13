@@ -197,6 +197,22 @@ export const SCORE = {
   storageKey: 'foratree.highscore',
 } as const;
 
+export const UPGRADE_EFFECTS = {
+  deepRootsTetherGrowthPerCopy: 0.15,
+  heartwoodDecayFactorPerCopy: 0.6,
+  widerCanopyAuraRadiusPx: 30,
+  munitionsLoomRegenMultPerCopy: 1.4,
+  hollowPointDamageMultPerCopy: 0.15,
+  kineticDampersMaxHpBonus: 25,
+  nanoSutureMoveSpeedBonus: 0.08,
+  nanoSutureHealHp: 50,
+  vacuumCoilsMagnetMult: 2,
+  vacuumCoilsCarryCap: 5,
+  rhizomeSpliceCatalystBonus: 0.25,
+  secondWindAegisCap: 2,
+  bioSurgeMaturityPct: 30,
+} as const;
+
 export type UpgradeCardDef = {
   id: string;
   name: string;
