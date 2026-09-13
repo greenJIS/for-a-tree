@@ -33,6 +33,7 @@ import { PityDropSystem } from '../systems/PityDropSystem';
 import { SpawnDirector, type MutantKind } from '../systems/SpawnDirector';
 import { TetherSystem } from '../systems/TetherSystem';
 import { TreeSystem } from '../systems/TreeSystem';
+import { SoundEffects } from '../audio/SoundEffects';
 import { bus } from '../eventBus';
 import type { TetherState } from '../eventBus';
 import { isArcadeImage } from '../guards';
@@ -51,6 +52,7 @@ const WEAPON_MAG_SIZES: Record<WeaponId, number> = {
 };
 
 export class ArenaScene extends Phaser.Scene {
+  #audio = new SoundEffects();
   #player!: Player;
   #tether = new TetherSystem();
   #tree = new TreeSystem();
@@ -105,6 +107,7 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   #onGenerationTriggered(generation: number): void {
+    this.#audio.generation();
     this.#aegis.grantCharge(this.#upgrades.aegisCapacity);
     const cards = this.#upgrades.draw(generation);
     this.physics.pause();
@@ -150,6 +153,9 @@ export class ArenaScene extends Phaser.Scene {
     this.#lastEmittedAegis = null;
 
     this.physics.resume();
+
+    this.input.on('pointerdown', () => this.#audio.resume());
+    this.input.keyboard?.on('keydown', () => this.#audio.resume());
 
     this.cameras.main.setBackgroundColor('#1a1410');
 
@@ -248,6 +254,7 @@ export class ArenaScene extends Phaser.Scene {
           EnemyPool.kill(enemy);
           this.#kills += 1;
           this.#handleKillDrop(killX, killY);
+          this.#audio.alienSplat();
           return;
         }
 
@@ -433,7 +440,9 @@ export class ArenaScene extends Phaser.Scene {
     this.#elapsedSec += dtSec;
 
     if (this.#spaceKey && Phaser.Input.Keyboard.JustDown(this.#spaceKey)) {
-      this.#aegis.tryActivate(this.time.now);
+      if (this.#aegis.tryActivate(this.time.now)) {
+        this.#audio.aegisOn();
+      }
     }
 
     const isAegisActive = this.#aegis.isActive(this.time.now);
@@ -520,6 +529,7 @@ export class ArenaScene extends Phaser.Scene {
           EnemyPool.kill(child);
           this.#kills += 1;
           this.#handleKillDrop(killX, killY);
+          this.#audio.alienSplat();
           continue;
         }
 
@@ -541,8 +551,12 @@ export class ArenaScene extends Phaser.Scene {
     const state = this.#tether.update(dtSec, dist <= this.#auraRadius);
 
     if (state !== this.#lastTetherState) {
+      const prevState = this.#lastTetherState;
       this.#lastTetherState = state;
       bus.emit('TETHER_STATE_CHANGED', { state });
+      if (state === 'decaying' && prevState !== 'decaying') {
+        this.#audio.decayWarn();
+      }
       this.#auraSprite.setTint(
         state === 'tethered'
           ? 0x22d3ee
@@ -560,6 +574,7 @@ export class ArenaScene extends Phaser.Scene {
       if (result.generationTriggered) {
         this.#onGenerationTriggered(result.generation);
       }
+      this.#audio.deliver();
       this.#player.setSpeedMultiplier(this.#upgrades.moveSpeedMult);
       bus.emit('CATALYSTS_CARRIED', {
         tiers: [],
@@ -618,6 +633,7 @@ export class ArenaScene extends Phaser.Scene {
           this.#player.sprite.rotation,
           this.#upgrades.weaponDamageMult,
         );
+        this.#audio.carbine();
       } else if (activeId === 'scatter') {
         this.#bullets.fireScatter(
           this.#player.x,
@@ -625,6 +641,7 @@ export class ArenaScene extends Phaser.Scene {
           this.#player.sprite.rotation,
           this.#upgrades.weaponDamageMult,
         );
+        this.#audio.scatter();
       } else if (activeId === 'rail') {
         this.#bullets.fireRail(
           this.#player.x,
@@ -632,6 +649,7 @@ export class ArenaScene extends Phaser.Scene {
           this.#player.sprite.rotation,
           this.#upgrades.weaponDamageMult,
         );
+        this.#audio.rail();
       }
     }
 
@@ -790,6 +808,7 @@ export class ArenaScene extends Phaser.Scene {
           this.#onGenerationTriggered(result.generation);
         }
         CanisterPool.kill(child);
+        this.#audio.deliver();
         bus.emit('CATALYSTS_DELIVERED', {
           totalPct: result.maturityPct,
           count: 1,
@@ -800,6 +819,7 @@ export class ArenaScene extends Phaser.Scene {
 
       if (!this.#carry.add(tier, this.#upgrades.carryCapacity)) continue;
       CanisterPool.kill(child);
+      this.#audio.pickup();
       this.#player.setSpeedMultiplier(
         this.#carry.speedMultiplier() * this.#upgrades.moveSpeedMult,
       );
@@ -892,6 +912,7 @@ export class ArenaScene extends Phaser.Scene {
 
     this.#handleKillDrop(cx, cy);
     EnemyPool.kill(detonator);
+    this.#audio.alienSplat();
 
     if (
       Phaser.Math.Distance.Between(cx, cy, this.#player.x, this.#player.y) <=
@@ -911,6 +932,7 @@ export class ArenaScene extends Phaser.Scene {
         if (remaining <= 0) {
           this.#handleKillDrop(child.x, child.y);
           EnemyPool.kill(child);
+          this.#audio.alienSplat();
         } else {
           EnemyPool.setHp(child, remaining);
         }
