@@ -223,7 +223,13 @@ export class ArenaScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown', () => this.#audio.resume());
 
     this.add
-      .tileSprite(ARENA.width / 2, ARENA.height / 2, ARENA.width, ARENA.height, 'ground')
+      .tileSprite(
+        ARENA.width / 2,
+        ARENA.height / 2,
+        ARENA.width,
+        ARENA.height,
+        'ground',
+      )
       .setTint(0xb0a68f);
 
     if (!this.textures.exists('ground-vignette')) {
@@ -367,13 +373,14 @@ export class ArenaScene extends Phaser.Scene {
       },
     );
 
-    this.physics.add.overlap(
+    this.physics.add.collider(
       this.#player.sprite,
       this.#enemies.group,
       (_playerObj, enemyObj) => {
         if (!isArcadeImage(enemyObj)) return;
         this.#takeMeleeFrom(enemyObj);
       },
+      () => !this.#player.isDashing,
     );
 
     bus.emit('PLAYER_HP_CHANGED', {
