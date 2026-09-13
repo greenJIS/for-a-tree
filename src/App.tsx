@@ -6,6 +6,7 @@
  * the typed event bus. SRS 2.1.
  */
 import { usePhaserGame } from './game/usePhaserGame';
+import { Hud } from './hud/Hud';
 
 function App() {
   const containerRef = usePhaserGame();
@@ -16,7 +17,12 @@ function App() {
         className="relative aspect-video w-full max-w-[1280px] overflow-hidden
           border border-sand-800 bg-sand-900 shadow-2xl shadow-black/60"
       >
-        <div id="phaser-root" ref={containerRef} className="absolute inset-0" />
+        <div
+          id="phaser-root"
+          ref={containerRef}
+          className="absolute inset-0 z-10"
+        />
+        <Hud />
       </div>
     </main>
   );

@@ -3,13 +3,29 @@
  * SRS 2.1.
  */
 import Phaser from 'phaser';
-import { AURA_RADIUS_BASE, BARREN_MARGIN, TREE_POS } from '../config';
+import {
+  AURA_RADIUS_BASE,
+  BARREN_MARGIN,
+  GROWTH_CEILING,
+  TICK_INTERVAL_MS,
+  TREE_POS,
+} from '../config';
 import { FRAME } from '../frames';
 import { Player } from '../entities/Player';
+import { TetherSystem } from '../systems/TetherSystem';
+import { TreeSystem } from '../systems/TreeSystem';
+import { bus } from '../eventBus';
+import type { TetherState } from '../eventBus';
 import spritesheetUrl from '../../assets/spritesheet.png';
 
 export class ArenaScene extends Phaser.Scene {
   #player!: Player;
+  #tether = new TetherSystem();
+  #tree = new TreeSystem();
+  #auraSprite!: Phaser.GameObjects.Image;
+  #treeSprite!: Phaser.GameObjects.Image;
+  #lastTetherState: TetherState = 'tethered';
+  #msSinceTick = 0;
 
   constructor() {
     super('arena');
@@ -40,27 +56,70 @@ export class ArenaScene extends Phaser.Scene {
     barren.setAlpha(0.25);
     barren.setTint(0x6b7280);
 
-    const aura = this.add.image(
+    this.#auraSprite = this.add.image(
       TREE_POS.x,
       TREE_POS.y,
       'sheet',
       FRAME.auraRing,
     );
-    aura.setDisplaySize(AURA_RADIUS_BASE * 2, AURA_RADIUS_BASE * 2);
-    aura.setTint(0x22d3ee);
+    this.#auraSprite.setDisplaySize(AURA_RADIUS_BASE * 2, AURA_RADIUS_BASE * 2);
+    this.#auraSprite.setTint(0x22d3ee);
 
-    const tree = this.add.image(
+    this.#treeSprite = this.add.image(
       TREE_POS.x,
       TREE_POS.y,
       'sheet',
       FRAME.treeSprout,
     );
-    tree.setDisplaySize(64, 64);
+    this.#treeSprite.setDisplaySize(64, 64);
 
     this.#player = new Player(this, TREE_POS.x, TREE_POS.y);
   }
 
-  override update(): void {
+  override update(_time: number, delta: number): void {
+    const dtSec = delta / 1000;
     this.#player.update();
+
+    const dist = Phaser.Math.Distance.Between(
+      this.#player.x,
+      this.#player.y,
+      TREE_POS.x,
+      TREE_POS.y,
+    );
+    const state = this.#tether.update(dtSec, dist <= AURA_RADIUS_BASE);
+
+    if (state !== this.#lastTetherState) {
+      this.#lastTetherState = state;
+      bus.emit('TETHER_STATE_CHANGED', { state });
+      this.#auraSprite.setTint(
+        state === 'tethered'
+          ? 0x22d3ee
+          : state === 'grace'
+            ? 0xfbbf24
+            : 0xf43f5e,
+      );
+    }
+
+    const result = this.#tree.update(dtSec, state);
+    if (result.stalledCrossing) {
+      bus.emit('GROWTH_STALLED', { ceilingPct: GROWTH_CEILING });
+    }
+
+    const phaseSize = [0, 64, 96, 128, 160][this.#tree.phase];
+    this.#treeSprite.setDisplaySize(phaseSize, phaseSize);
+    this.#treeSprite.setFrame(
+      this.#tree.phase === 1 ? FRAME.treeSprout : FRAME.treeSapling,
+    );
+
+    this.#msSinceTick += delta;
+    if (this.#msSinceTick >= TICK_INTERVAL_MS) {
+      this.#msSinceTick = 0;
+      bus.emit('TREE_GROWTH_TICK', {
+        maturityPct: result.maturityPct,
+        generation: result.generation,
+        ratePerSec: result.ratePerSec,
+        ceilingPct: GROWTH_CEILING,
+      });
+    }
   }
 }
