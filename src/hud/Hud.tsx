@@ -1,11 +1,15 @@
 /** HUD root. Layered over the canvas at z-20, never intercepts input. */
+import { AegisBadge } from './AegisBadge';
 import { AmmoReadout } from './AmmoReadout';
 import { CarriedCatalystPips } from './CarriedCatalystPips';
 import { DecayVignette } from './DecayVignette';
+import { DraftModal } from './DraftModal';
 import { GameOverCard } from './GameOverCard';
 import { HealthBar } from './HealthBar';
 import { MaturityGauge } from './MaturityGauge';
+import { ScoreReadout } from './ScoreReadout';
 import { TetherBeacon } from './TetherBeacon';
+import { WaveLabel } from './WaveLabel';
 
 export function Hud() {
   return (
@@ -20,12 +24,22 @@ export function Hud() {
         <MaturityGauge />
         <TetherBeacon />
         <CarriedCatalystPips />
+        <WaveLabel />
+      </div>
+
+      <div className="absolute top-4 right-4">
+        <ScoreReadout />
+      </div>
+
+      <div className="absolute bottom-4 left-4">
+        <AegisBadge />
       </div>
 
       <div className="absolute right-4 bottom-4">
         <AmmoReadout />
       </div>
 
+      <DraftModal />
       <GameOverCard />
     </div>
   );
