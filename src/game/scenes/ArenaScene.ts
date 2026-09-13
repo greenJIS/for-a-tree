@@ -39,6 +39,7 @@ import { bus } from '../eventBus';
 import type { TetherState } from '../eventBus';
 import { isArcadeImage } from '../guards';
 import spritesheetUrl from '../../assets/spritesheet.png';
+import groundUrl from '../../assets/ground.png';
 
 const WEAPON_FIRE_RATES: Record<WeaponId, number> = {
   carbine: CARBINE.fireRatePerSec,
@@ -153,6 +154,7 @@ export class ArenaScene extends Phaser.Scene {
       frameWidth: 512,
       frameHeight: 512,
     });
+    this.load.image('ground', groundUrl);
   }
 
   create(): void {
@@ -192,7 +194,13 @@ export class ArenaScene extends Phaser.Scene {
     this.input.on('pointerdown', () => this.#audio.resume());
     this.input.keyboard?.on('keydown', () => this.#audio.resume());
 
-    this.cameras.main.setBackgroundColor('#1a1410');
+    this.add.tileSprite(
+      ARENA.width / 2,
+      ARENA.height / 2,
+      ARENA.width,
+      ARENA.height,
+      'ground',
+    );
 
     // Barren ring first, so the bright aura ring draws over it.
     // Delta spec 7.3.
