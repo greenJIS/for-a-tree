@@ -1,0 +1,13 @@
+{
+  // Project markdown rules. MD013 relaxed to 120 chars; tables and code
+  // blocks cannot be wrapped without breaking them, so they are exempt.
+  "config": {
+    "MD013": {
+      "line_length": 120,
+      "tables": false,
+      "code_blocks": false,
+    },
+  },
+  "globs": ["**/*.md"],
+  "ignores": ["node_modules"],
+}
