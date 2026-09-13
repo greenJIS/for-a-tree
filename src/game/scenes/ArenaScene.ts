@@ -5,9 +5,12 @@
 import Phaser from 'phaser';
 import { AURA_RADIUS_BASE, BARREN_MARGIN, TREE_POS } from '../config';
 import { FRAME } from '../frames';
+import { Player } from '../entities/Player';
 import spritesheetUrl from '../../assets/spritesheet.png';
 
 export class ArenaScene extends Phaser.Scene {
+  #player!: Player;
+
   constructor() {
     super('arena');
   }
@@ -53,5 +56,11 @@ export class ArenaScene extends Phaser.Scene {
       FRAME.treeSprout,
     );
     tree.setDisplaySize(64, 64);
+
+    this.#player = new Player(this, TREE_POS.x, TREE_POS.y);
+  }
+
+  override update(): void {
+    this.#player.update();
   }
 }
