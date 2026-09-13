@@ -34,6 +34,7 @@ import { PityDropSystem } from '../systems/PityDropSystem';
 import { SpawnDirector, type MutantKind } from '../systems/SpawnDirector';
 import { TetherSystem } from '../systems/TetherSystem';
 import { TreeSystem } from '../systems/TreeSystem';
+import { ParticleFX } from '../systems/ParticleFX';
 import { SoundEffects } from '../audio/SoundEffects';
 import { bus } from '../eventBus';
 import type { TetherState } from '../eventBus';
@@ -90,6 +91,7 @@ export class ArenaScene extends Phaser.Scene {
   #msSinceAegisTick = 0;
   #enemies!: EnemyPool;
   #canisters!: CanisterPool;
+  #particles!: ParticleFX;
   #carry = new CarrySystem();
   #pity = new PityDropSystem();
   #hp: number = PLAYER.maxHp;
@@ -252,6 +254,7 @@ export class ArenaScene extends Phaser.Scene {
       child.setData('id', index + 1);
     });
     this.#canisters = new CanisterPool(this, 30);
+    this.#particles = new ParticleFX(this);
 
     const keyboard = this.input.keyboard;
     if (keyboard) {
@@ -295,6 +298,7 @@ export class ArenaScene extends Phaser.Scene {
           EnemyPool.kill(enemy);
           this.#kills += 1;
           this.#handleKillDrop(killX, killY);
+          this.#particles.splatter(killX, killY);
           this.#audio.alienSplat();
           return;
         }
@@ -588,6 +592,7 @@ export class ArenaScene extends Phaser.Scene {
           EnemyPool.kill(child);
           this.#kills += 1;
           this.#handleKillDrop(killX, killY);
+          this.#particles.splatter(killX, killY);
           this.#audio.alienSplat();
           continue;
         }
@@ -634,6 +639,7 @@ export class ArenaScene extends Phaser.Scene {
         this.#triggerGeneration(result.generation);
       }
       this.#catalystsDeliveredCount += count;
+      this.#particles.sporeBurst(TREE_POS.x, TREE_POS.y);
       this.#audio.deliver();
       this.#player.setSpeedMultiplier(this.#upgrades.moveSpeedMult);
       bus.emit('CATALYSTS_CARRIED', {
@@ -686,6 +692,11 @@ export class ArenaScene extends Phaser.Scene {
     ) {
       const activeId = this.#weapons.activeWeaponId;
       this.#nextShotAtMs = this.time.now + 1000 / WEAPON_FIRE_RATES[activeId];
+      this.#particles.muzzleFlash(
+        this.#player.x,
+        this.#player.y,
+        this.#player.sprite.rotation,
+      );
       if (activeId === 'carbine') {
         this.#bullets.fireCarbine(
           this.#player.x,
@@ -844,7 +855,10 @@ export class ArenaScene extends Phaser.Scene {
       TREE_POS.x,
       TREE_POS.y,
     );
-    if (homeDist < barrenRadius) return;
+    if (homeDist < barrenRadius) {
+      this.#particles.dustPuff(killX, killY);
+      return;
+    }
 
     const tier = this.#pity.rollOnKill();
     if (!tier) return;
@@ -889,6 +903,7 @@ export class ArenaScene extends Phaser.Scene {
           this.#triggerGeneration(result.generation);
         }
         CanisterPool.kill(child);
+        this.#particles.sporeBurst(TREE_POS.x, TREE_POS.y);
         this.#audio.deliver();
         this.#catalystsDeliveredCount += 1;
         bus.emit('CATALYSTS_DELIVERED', {
@@ -995,6 +1010,7 @@ export class ArenaScene extends Phaser.Scene {
     this.#handleKillDrop(cx, cy);
     EnemyPool.kill(detonator);
     this.#kills += 1;
+    this.#particles.splatter(cx, cy);
     this.#audio.alienSplat();
 
     if (
@@ -1016,6 +1032,7 @@ export class ArenaScene extends Phaser.Scene {
           this.#handleKillDrop(child.x, child.y);
           EnemyPool.kill(child);
           this.#kills += 1;
+          this.#particles.splatter(child.x, child.y);
           this.#audio.alienSplat();
         } else {
           EnemyPool.setHp(child, remaining);
