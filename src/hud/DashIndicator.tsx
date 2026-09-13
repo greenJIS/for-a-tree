@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { bus } from '../game/eventBus';
 import type { GameEvents } from '../game/eventBus';
+import { HudPanel } from './HudPanel';
 
 type DashPayload = GameEvents['DASH_STATUS'];
 
@@ -23,11 +24,10 @@ export function DashIndicator() {
   }, []);
 
   return (
-    <div
-      className={`relative overflow-hidden border px-3 py-1.5 text-xs tracking-widest uppercase transition-colors ${
-        ready
-          ? 'border-growth/40 bg-growth/10 text-growth'
-          : 'border-sand-800 bg-sand-950/60 text-white/40'
+    <HudPanel
+      tone={ready ? 'growth' : 'idle'}
+      className={`relative overflow-hidden text-xs tracking-widest uppercase ${
+        ready ? 'text-growth' : 'text-white/40'
       }`}
     >
       {!ready && (
@@ -40,6 +40,6 @@ export function DashIndicator() {
       <span className="relative">
         {ready ? '[SHIFT] DASH READY' : '[SHIFT] DASH'}
       </span>
-    </div>
+    </HudPanel>
   );
 }
