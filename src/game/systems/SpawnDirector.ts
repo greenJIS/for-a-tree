@@ -62,7 +62,7 @@ export class SpawnDirector {
 
   #unlockedKinds(): MutantKind[] {
     return UNLOCK_ORDER.filter(
-      (kind) => this.#elapsedSec > DIRECTOR.unlockAtSec[kind],
+      (kind) => this.#elapsedSec >= DIRECTOR.unlockAtSec[kind],
     );
   }
 

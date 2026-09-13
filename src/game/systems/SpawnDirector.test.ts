@@ -45,7 +45,7 @@ describe('SpawnDirector', () => {
     // 'detonator' with the identical rng script.
     const director = new SpawnDirector(scriptedRng(new Array(20).fill(0.99)));
     for (let t = 0; t < 44; t += 1) director.update(1, 100);
-    const spawned = director.update(1, 0);
+    const spawned = director.update(0, 0);
     expect(spawned).not.toContain('detonator');
   });
 
@@ -58,12 +58,22 @@ describe('SpawnDirector', () => {
     expect(spawned).toContain('detonator');
   });
 
+  it('unlocks the Bio-Detonator at exactly 45.0 elapsed seconds, not one tick later', () => {
+    const director = new SpawnDirector(scriptedRng(new Array(20).fill(0.99)));
+    // 45 whole-second updates lands elapsedSec at exactly 45.0.
+    for (let t = 0; t < 45; t += 1) director.update(1, 100);
+    // No extra update here (unlike the pre-existing "unlocks at 45 seconds"
+    // test, which advances to 46s) -- this checks the exact boundary.
+    const spawned = director.update(0, 0);
+    expect(spawned).toContain('detonator');
+  });
+
   it('does not unlock the Carapace Brute before 90 seconds', () => {
     // Two kinds unlocked (swarmer, detonator) for the whole loop; rng near
     // 1 selects 'detonator', never 'brute'.
     const director = new SpawnDirector(scriptedRng(new Array(20).fill(0.99)));
     for (let t = 0; t < 89; t += 1) director.update(1, 100);
-    const spawned = director.update(1, 0);
+    const spawned = director.update(0, 0);
     expect(spawned).not.toContain('brute');
   });
 
