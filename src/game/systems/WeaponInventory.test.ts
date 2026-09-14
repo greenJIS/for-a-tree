@@ -107,7 +107,7 @@ describe('WeaponInventory', () => {
 
   it('provides scalar getters activeClip, activeReserve, and isReloading', () => {
     expect(inv.activeClip).toBe(24);
-    expect(inv.activeReserve).toBe(0);
+    expect(inv.activeReserve).toBe(240);
     expect(inv.isReloading).toBe(false);
 
     inv.setReserveForTest('carbine', 10);
