@@ -20,6 +20,11 @@ export const AURA_RADIUS_BASE = 220;
 /** Barren zone extends this far past the aura. Delta spec 4. */
 export const BARREN_MARGIN = 120;
 
+/** Fraction of the live aura radius inside which a kill drops nothing at
+ * all. Below this, defending the tree still gets zero loot; beyond it,
+ * kills roll pity/tier and drop normally (see #handleKillDrop). */
+export const DEADZONE_RADIUS_FRACTION = 0.5;
+
 /** Distance from player center to the gun muzzle, used for bullet spawn and muzzle-flash
  * placement so both originate from the same point. */
 export const MUZZLE_OFFSET = 24;
