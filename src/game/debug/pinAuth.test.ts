@@ -60,4 +60,29 @@ describe('PinAuth', () => {
     expect(second.hasPin()).toBe(true);
     await expect(second.verifyPin('7777')).resolves.toBe(true);
   });
+
+  it('handles thrown storage access errors gracefully', async () => {
+    const originalWindow = (globalThis as unknown as { window?: unknown }).window;
+    try {
+      const mockWindow = {};
+      Object.defineProperty(mockWindow, 'localStorage', {
+        get: () => {
+          throw new DOMException('Access denied', 'SecurityError');
+        },
+        configurable: true,
+      });
+      (globalThis as unknown as { window: unknown }).window = mockWindow;
+
+      const restrictedAuth = new PinAuth();
+      expect(restrictedAuth.hasPin()).toBe(false);
+      await expect(restrictedAuth.verifyPin('1234')).resolves.toBe(false);
+      await expect(restrictedAuth.setPin('1234')).resolves.toBeUndefined();
+    } finally {
+      if (originalWindow !== undefined) {
+        (globalThis as unknown as { window: unknown }).window = originalWindow;
+      } else {
+        delete (globalThis as unknown as { window?: unknown }).window;
+      }
+    }
+  });
 });

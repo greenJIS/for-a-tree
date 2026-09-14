@@ -93,7 +93,14 @@ export function DebugMenu() {
 
     if (screen === 'set-2') {
       if (next === firstPin) {
-        void pinAuth.setPin(next).then(() => setAuthenticated(true));
+        void pinAuth
+          .setPin(next)
+          .then(() => setAuthenticated(true))
+          .catch(() => {
+            setError(true);
+            setDigits('');
+            setFirstPin('');
+          });
       } else {
         setError(true);
         setFirstPin('');
@@ -103,14 +110,21 @@ export function DebugMenu() {
     }
 
     // screen === 'enter'
-    void pinAuth.verifyPin(next).then((ok) => {
-      if (ok) {
-        setAuthenticated(true);
-      } else {
+    void pinAuth
+      .verifyPin(next)
+      .then((ok) => {
+        if (ok) {
+          setAuthenticated(true);
+        } else {
+          setError(true);
+          setDigits('');
+        }
+      })
+      .catch(() => {
         setError(true);
         setDigits('');
-      }
-    });
+        setFirstPin('');
+      });
   };
 
   const backspace = () => setDigits((prev) => prev.slice(0, -1));

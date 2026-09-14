@@ -32,10 +32,15 @@ export class PinAuth {
   constructor(storage?: Storage) {
     if (storage) {
       this.#storage = storage;
-    } else if (typeof window !== 'undefined' && window.localStorage) {
-      this.#storage = window.localStorage;
     } else {
-      this.#storage = null;
+      try {
+        this.#storage =
+          typeof window !== 'undefined' && window.localStorage
+            ? window.localStorage
+            : null;
+      } catch {
+        this.#storage = null;
+      }
     }
   }
 

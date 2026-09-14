@@ -581,6 +581,7 @@ export class ArenaScene extends Phaser.Scene {
       this.#spawnAtEdge(kind);
     };
     const onKillAll = () => {
+      let killedAny = false;
       for (const child of this.#enemies.group.getChildren()) {
         if (!isArcadeImage(child) || !child.active) continue;
         const killX = child.x;
@@ -589,6 +590,9 @@ export class ArenaScene extends Phaser.Scene {
         this.#kills += 1;
         this.#handleKillDrop(killX, killY);
         this.#particles.splatter(killX, killY);
+        killedAny = true;
+      }
+      if (killedAny) {
         this.#audio.alienSplat();
       }
     };
@@ -635,8 +639,9 @@ export class ArenaScene extends Phaser.Scene {
   override update(_time: number, delta: number): void {
     if (!this.#over && !this.#pausedForDraft) {
       if (
-        (this.#escKey && Phaser.Input.Keyboard.JustDown(this.#escKey)) ||
-        (this.#pKey && Phaser.Input.Keyboard.JustDown(this.#pKey))
+        !this.#debugMenuOpen &&
+        ((this.#escKey && Phaser.Input.Keyboard.JustDown(this.#escKey)) ||
+          (this.#pKey && Phaser.Input.Keyboard.JustDown(this.#pKey)))
       ) {
         bus.emit('TOGGLE_PAUSE');
       }
