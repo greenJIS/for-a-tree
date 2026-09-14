@@ -16,6 +16,15 @@ A player-facing guide to "For a Tree". For balance numbers and formulas, see
 | `R`         | Reload                       |
 | `Esc` / `P` | Pause                        |
 
+## Debug menu (development only)
+
+Press `` ` `` (backtick) to open a PIN-gated debug menu: display scale,
+a difficulty override, God Mode, timescale, force-spawn/kill-all, and an
+instant-maturity button. The first time it's opened on a given browser,
+it asks you to set a 4-digit PIN; every time after that, it asks for the
+PIN before showing the menu. This is a development tool, not a real
+security boundary -- the PIN's hash lives in `localStorage`.
+
 ## Starting a run
 
 The title screen offers three difficulty modes: **Easy** (lighter mutant pressure, good for
