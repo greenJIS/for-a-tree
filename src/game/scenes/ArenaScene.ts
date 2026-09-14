@@ -20,6 +20,7 @@ import {
   RAIL,
   SCATTER,
   TICK_INTERVAL_MS,
+  TREE,
   TREE_POS,
   UPGRADE_EFFECTS,
 } from '../config';
@@ -299,7 +300,7 @@ export class ArenaScene extends Phaser.Scene {
       'sheet',
       FRAME.treeSprout,
     );
-    this.#treeSprite.setDisplaySize(64, 64);
+    this.#treeSprite.setDisplaySize(TREE.phaseSizes[1], TREE.phaseSizes[1]);
 
     this.#player = new Player(this, TREE_POS.x, TREE_POS.y);
     this.#aegisSprite = this.add.image(
@@ -841,7 +842,7 @@ export class ArenaScene extends Phaser.Scene {
       bus.emit('GROWTH_STALLED', { ceilingPct: GROWTH_CEILING });
     }
 
-    const phaseSize = [0, 64, 96, 128, 160][this.#tree.phase];
+    const phaseSize = TREE.phaseSizes[this.#tree.phase];
     this.#treeSprite.setDisplaySize(phaseSize, phaseSize);
     this.#treeSprite.setFrame(
       this.#tree.phase === 1 ? FRAME.treeSprout : FRAME.treeSapling,
