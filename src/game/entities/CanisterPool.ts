@@ -91,7 +91,9 @@ export class CanisterPool {
 
       if (age >= CANISTER.lifetimeMs - CANISTER.despawnWarnMs) {
         const phase = Math.floor((age / 1000) * CANISTER.despawnFlashHz);
-        child.setAlpha(phase % 2 === 0 ? 1 : 0.3);
+        child.setTint(
+          phase % 2 === 0 ? 0xff0000 : TIER_TINT[CanisterPool.tier(child)],
+        );
       }
 
       if (!child.getData('settled')) continue;
