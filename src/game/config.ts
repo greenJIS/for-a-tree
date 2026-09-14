@@ -110,19 +110,60 @@ export const DETONATOR = {
   displaySize: 40,
 } as const;
 
-/** Spawn director. SRS 5.1. */
+/** Spawn director stat ramp. SRS 5.1. Shared across every difficulty mode. */
 export const DIRECTOR = {
-  baseThreat: 3,
-  threatPerSec: 1 / 6,
-  maxSpawnsPerSecond: 2,
-  unlockAtSec: {
-    swarmer: 0,
-    detonator: 45,
-    brute: 90,
-  },
   hpRampPer60s: 0.1,
   dmgRampPer60s: 0.06,
 } as const;
+
+/** Spawn director pacing, one config per difficulty mode. SRS 5.1; mode
+ * scaling is the loop-correction delta spec's difficulty-modes addendum. */
+export const DIRECTOR_PRESETS = {
+  easy: {
+    baseThreat: 1.8,
+    threatPerSec: 0.1,
+    maxSpawnsPerSecond: 2,
+    unlockAtSec: {
+      swarmer: 0,
+      detonator: 75,
+      brute: 150,
+    },
+  },
+  medium: {
+    baseThreat: 2.4,
+    threatPerSec: 2 / 15,
+    maxSpawnsPerSecond: 2,
+    unlockAtSec: {
+      swarmer: 0,
+      detonator: 60,
+      brute: 120,
+    },
+  },
+  hard: {
+    baseThreat: 3,
+    threatPerSec: 1 / 6,
+    maxSpawnsPerSecond: 2,
+    unlockAtSec: {
+      swarmer: 0,
+      detonator: 45,
+      brute: 90,
+    },
+  },
+} as const;
+
+export type DifficultyMode = keyof typeof DIRECTOR_PRESETS;
+export type DirectorConfig = (typeof DIRECTOR_PRESETS)[DifficultyMode];
+
+const DIFFICULTY_MODES: readonly DifficultyMode[] = Object.keys(
+  DIRECTOR_PRESETS,
+) as DifficultyMode[];
+
+export function isDifficultyMode(value: unknown): value is DifficultyMode {
+  return (
+    typeof value === 'string' &&
+    (DIFFICULTY_MODES as readonly string[]).includes(value)
+  );
+}
 
 /** Pity-weighted drop system. SRS 3.5. */
 export const PITY = {
