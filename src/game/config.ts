@@ -125,13 +125,13 @@ export const DIRECTOR = {
  * scaling is the loop-correction delta spec's difficulty-modes addendum. */
 export const DIRECTOR_PRESETS = {
   easy: {
-    baseThreat: 1.8,
-    threatPerSec: 0.1,
+    baseThreat: 1.0,
+    threatPerSec: 0.05,
     maxSpawnsPerSecond: 2,
     unlockAtSec: {
       swarmer: 0,
-      detonator: 75,
-      brute: 150,
+      detonator: 140,
+      brute: 260,
     },
   },
   medium: {
