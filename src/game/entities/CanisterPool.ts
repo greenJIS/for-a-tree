@@ -25,6 +25,7 @@ export class CanisterPool {
   constructor(scene: Phaser.Scene, size: number) {
     this.#scene = scene;
     this.group = scene.add.group({
+      classType: Phaser.GameObjects.Image,
       defaultKey: 'sheet',
       defaultFrame: FRAME.canister,
       maxSize: size,
