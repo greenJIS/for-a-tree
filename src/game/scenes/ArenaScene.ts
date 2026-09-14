@@ -10,6 +10,7 @@ import {
   BARREN_MARGIN,
   CARBINE,
   CATALYST_VALUE,
+  DEADZONE_RADIUS_FRACTION,
   DETONATOR,
   DIRECTOR_PRESETS,
   GROWTH_CEILING,
@@ -911,20 +912,21 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   /**
-   * Barren-zone eligibility, then pity, then ejection. Delta spec 4: a
-   * kill inside barrenRadius produces no canister at all, and does NOT
-   * advance the pity counter -- defending the tree must never silently
-   * burn the player's accumulated drop odds.
+   * Dead-zone eligibility, then pity, then ejection. A kill within
+   * DEADZONE_RADIUS_FRACTION of the live aura radius produces no canister
+   * at all, and does NOT advance the pity counter -- defending the tree
+   * up close must never silently burn the player's accumulated drop odds.
+   * Kills beyond that radius roll and drop normally, per delta spec 4.
    */
   #handleKillDrop(killX: number, killY: number): void {
-    const barrenRadius = this.#auraRadius + BARREN_MARGIN;
+    const deadZoneRadius = this.#auraRadius * DEADZONE_RADIUS_FRACTION;
     const homeDist = Phaser.Math.Distance.Between(
       killX,
       killY,
       TREE_POS.x,
       TREE_POS.y,
     );
-    if (homeDist < barrenRadius) {
+    if (homeDist < deadZoneRadius) {
       this.#particles.dustPuff(killX, killY);
       return;
     }
