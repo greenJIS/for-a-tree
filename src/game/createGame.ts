@@ -3,11 +3,14 @@
  * so the arena letterboxes intact. SRS 2.3 and 8.
  */
 import Phaser from 'phaser';
-import { ARENA } from './config';
+import { ARENA, type DifficultyMode } from './config';
 import { ArenaScene } from './scenes/ArenaScene';
 
-export function createGame(parent: HTMLElement): Phaser.Game {
-  return new Phaser.Game({
+export function createGame(
+  parent: HTMLElement,
+  mode: DifficultyMode,
+): Phaser.Game {
+  const game = new Phaser.Game({
     type: Phaser.AUTO,
     parent,
     width: ARENA.width,
@@ -22,4 +25,6 @@ export function createGame(parent: HTMLElement): Phaser.Game {
     },
     scene: [ArenaScene],
   });
+  game.registry.set('difficulty', mode);
+  return game;
 }
