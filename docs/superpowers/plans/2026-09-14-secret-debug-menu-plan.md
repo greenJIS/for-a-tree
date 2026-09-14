@@ -708,6 +708,25 @@ export function DebugMenu() {
     return () => bus.off('DEBUG_MENU_TOGGLED', onToggle);
   }, []);
 
+  // ArenaScene.create() resets god mode, scale, and timescale back to
+  // shipped defaults on every restart, not just the first run -- but
+  // deliberately does NOT reset difficulty (Task 7 writes the override into
+  // the registry precisely so it survives a restart). Re-sync the menu's
+  // displayed values for the three that do reset -- otherwise e.g. God Mode
+  // could read "on" here while the sim (freshly restarted) has already
+  // reset it to off. PIN authentication is intentionally NOT reset here;
+  // only a full page reload should ask for the PIN again. Tasks 6, 8, and 9
+  // each add one reset line inside onRestart below, alongside the useState
+  // they introduce; Task 7 (difficulty) deliberately adds none.
+  useEffect(() => {
+    const onRestart = () => {
+      // Tasks 6, 8, 9 add: setGodMode(false); setScaleTier(2);
+      // setTimescaleState(1);
+    };
+    bus.on('RESTART_SIMULATION', onRestart);
+    return () => bus.off('RESTART_SIMULATION', onRestart);
+  }, []);
+
   if (!open) return null;
 
   const screen: Screen = authenticated
@@ -720,6 +739,7 @@ export function DebugMenu() {
 
   const press = (digit: string) => {
     if (digits.length >= 4) return;
+    setError(false);
     const next = digits + digit;
     setDigits(next);
     if (next.length !== 4) return;
@@ -924,6 +944,14 @@ Replace the `{/* Tasks 6-11 add controls here */}` comment in the `screen === 'm
           </div>
 ```
 
+Add the reset line to the `onRestart` handler from Task 5:
+
+```typescript
+    const onRestart = () => {
+      setGodMode(false);
+    };
+```
+
 - [ ] **Step 2: Wire ArenaScene**
 
 Add a field (near `#debugMenuOpen`):
@@ -1053,6 +1081,8 @@ Add the control block, after the God Mode block:
             </div>
           </div>
 ```
+
+Do **not** add a line to the `onRestart` handler from Task 5 for this control — unlike god mode/scale/timescale, the difficulty override is meant to survive a restart (see Step 2), so the menu should keep showing whatever was last selected rather than snapping back to a default.
 
 - [ ] **Step 2: Wire ArenaScene**
 
@@ -1223,10 +1253,10 @@ Add a field:
   #scaleTier: ScaleTier = 2;
 ```
 
-Import the type:
+Import both the type and the formula function used below:
 
 ```typescript
-import type { ScaleTier } from '../debug/scale';
+import { applyScaleTier, type ScaleTier } from '../debug/scale';
 ```
 
 Reset it in `create()`'s reset block:
@@ -1242,8 +1272,6 @@ Apply it to the tree sprite where the tree's displaySize is already recomputed e
     const phaseSize = applyScaleTier(TREE.phaseSizes[this.#tree.phase], this.#scaleTier);
     this.#treeSprite.setDisplaySize(phaseSize, phaseSize);
 ```
-
-(Add `applyScaleTier` to the same import as `ScaleTier`: `import { applyScaleTier, type ScaleTier } from '../debug/scale';`.)
 
 Subscribe:
 
@@ -1298,6 +1326,15 @@ import { SCALE_TIERS, type ScaleTier } from '../game/debug/scale';
               ))}
             </div>
           </div>
+```
+
+Add the reset line to the `onRestart` handler from Task 5:
+
+```typescript
+    const onRestart = () => {
+      setGodMode(false);
+      setScaleTier(2);
+    };
 ```
 
 - [ ] **Step 6: Manual verification**
@@ -1367,19 +1404,24 @@ EOF
           </div>
 ```
 
-- [ ] **Step 2: Wire ArenaScene**
-
-Add a field:
+Add the reset line to the `onRestart` handler from Task 5:
 
 ```typescript
-  #debugTimescale = 1;
+    const onRestart = () => {
+      setGodMode(false);
+      setScaleTier(2);
+      setTimescaleState(1);
+    };
 ```
 
-Reset it in `create()`:
+- [ ] **Step 2: Wire ArenaScene**
+
+No new field needed — `this.time.timeScale` and `this.physics.world.timeScale` are themselves the only state, so store nothing extra (a write-only mirror field would just be dead weight).
+
+Reset both in `create()`, next to the other resets:
 
 ```typescript
     this.#scaleTier = 2;
-    this.#debugTimescale = 1;
     this.time.timeScale = 1;
     this.physics.world.timeScale = 1;
 ```
@@ -1388,7 +1430,6 @@ Subscribe:
 
 ```typescript
     const onSetTimescale = ({ factor }: { factor: number }) => {
-      this.#debugTimescale = factor;
       this.time.timeScale = factor;
       this.physics.world.timeScale = factor;
     };
@@ -1400,8 +1441,6 @@ Unsubscribe in `SHUTDOWN`:
 ```typescript
       bus.off('DEBUG_SET_TIMESCALE', onSetTimescale);
 ```
-
-`#debugTimescale` is stored even though nothing reads it back yet — it documents intent and gives a hook if a later task needs to query the current value (e.g. displaying it elsewhere); Vitest/`tsc` won't flag an unread private field as an error, but if `npm run lint` reports it unused, drop the field and rely solely on `this.time.timeScale` as the source of truth instead.
 
 - [ ] **Step 3: Manual verification**
 
@@ -1546,17 +1585,24 @@ git commit -m "feat(debug): wire Force-Spawn and Kill All controls end-to-end"
 
 - [ ] **Step 2: Wire ArenaScene**
 
-Reuses the exact path catalyst delivery already uses (`ArenaScene.ts:706-710`):
+Reuses the exact path catalyst delivery already uses (`ArenaScene.ts:706-710`), with one addition: `#triggerGeneration` sets `#pausedForDraft = true`, and the backtick handler added in Task 5 only runs its toggle logic inside `if (!this.#over && !this.#pausedForDraft)` — the same guard the existing Esc/P pause check already uses. If a generation triggers while the debug menu is still open, `#pausedForDraft` flips to `true` before the player can press backtick again, so the JustDown check would stop firing and the menu could never be closed — stacking the (still-open) debug menu underneath the draft-card modal with no way to dismiss it. Close the debug menu here, before calling `#triggerGeneration`, so `#pausedForDraft`'s own pause takes over cleanly instead of the debug menu's:
 
 ```typescript
     const onSetMaturity = ({ pct }: { pct: number }) => {
       const result = this.#tree.deliver(pct);
       if (result.generationTriggered) {
+        if (this.#debugMenuOpen) {
+          this.#debugMenuOpen = false;
+          this.#isPaused = false;
+          bus.emit('DEBUG_MENU_TOGGLED', { open: false });
+        }
         this.#triggerGeneration(result.generation);
       }
     };
     bus.on('DEBUG_SET_MATURITY', onSetMaturity);
 ```
+
+Don't call `this.physics.resume()` when closing the menu this way — `#triggerGeneration` calls `this.physics.pause()` immediately afterward regardless, so resuming first would just be a pointless resume-then-pause flicker in the same tick.
 
 Unsubscribe in `SHUTDOWN`:
 
@@ -1568,9 +1614,9 @@ Unsubscribe in `SHUTDOWN`:
 
 Run: `npm run dev`, start a run, unlock the debug menu.
 
-1. Click "Force 100%" — the draft-upgrade card modal appears exactly as it would after natural Generation, with the sim still paused underneath (debug menu closes automatically isn't required — draft modal renders above it; closing the debug menu with `` ` `` afterward should reveal the draft modal still open).
+1. Click "Force 100%" — the debug menu closes on its own and the draft-upgrade card modal appears exactly as it would after natural Generation (only one modal on screen, not stacked).
 2. Pick a card — play resumes normally afterward.
-3. Click "Force 100%" twice in a row (before drafting the first) — a second Generation is queued (`#pendingDraftGenerations`), matching how rapid natural catalyst delivery already behaves.
+3. Re-open the debug menu (backtick, re-enter PIN — a fresh `create()` didn't run, so authentication state from earlier this session should still hold and skip straight to the menu) and click "Force 100%" twice in a row (before drafting the first) — a second Generation is queued (`#pendingDraftGenerations`), matching how rapid natural catalyst delivery already behaves, and the debug menu still only closes once.
 
 - [ ] **Step 4: Commit**
 
@@ -1608,7 +1654,7 @@ security boundary -- the PIN's hash lives in `localStorage`.
 Run: `npm run build && npm run lint && npm run test`
 Expected: all three succeed with no errors.
 
-Run: `npm run dev` and manually replay the full flow once end-to-end: set a PIN, close and reopen the menu (still authenticated), toggle every control, restart the run from the Pause modal, confirm debug state resets to shipped defaults (God Mode off, scale 2x, difficulty back to the title-screen choice... actually the title-screen choice was overwritten in Task 7's registry write, so confirm it now runs at whatever difficulty was last selected in the debug menu, which is the documented behavior), then reload the page fully and confirm the debug menu asks for the PIN again (not "Set PIN" — the PIN persisted).
+Run: `npm run dev` and manually replay the full flow once end-to-end: set a PIN, close and reopen the menu (still authenticated), turn on God Mode, set scale to `1x`, set timescale to `2x`, then restart the run from the Pause modal (Esc/P → Restart — not the debug menu, which has no restart button). Reopen the debug menu afterward and confirm God Mode, scale, and timescale all show back at their shipped defaults (off / 2x / 1x) — this is the fix from this plan's self-review, not incidental behavior. Separately, set Difficulty to Advanced, restart again, and confirm it stays on Advanced this time (the one control that's meant to survive a restart, per Task 7). Finally, reload the page fully and confirm the debug menu asks for the PIN again (not "Set PIN" — the PIN itself persisted; only the authenticated session did not).
 
 - [ ] **Step 3: Commit**
 
@@ -1637,3 +1683,9 @@ EOF
 1. Event name `DEBUG_MENU_OPENED` (spec) → `DEBUG_MENU_TOGGLED: { open: boolean }` (plan) — simpler for the React side to mirror.
 2. "Physics body (radius/size)" scaling was dropped from the spec itself during spec review (radius config is dead code) — this plan implements the corrected, visual-only version.
 3. Canisters already in flight when the scale tier changes are not live-resized, due to a competing scale tween discovered while reading `CanisterPool.ts` — called out in Task 8 rather than silently doing something different from what the spec implied.
+
+**Issues found and fixed during this plan's own review pass (before any code was written):**
+1. **Stale error message** (`DebugMenu.tsx`): the PIN entry `error` flag was never cleared at the start of a new attempt, so re-entering a PIN after a mismatch could still show the previous "PINs did not match" message. Fixed in Task 5 by clearing `error` on every keypress.
+2. **YAGNI violation** (Task 9): an original draft added a private `#debugTimescale` field to `ArenaScene` that was written but never read. Removed — `this.time.timeScale` is already the single source of truth.
+3. **Debug-menu deadlock** (Task 11): `#triggerGeneration` sets `#pausedForDraft = true`, and the backtick handler (Task 5) only toggles inside `if (!this.#over && !this.#pausedForDraft)` — the same guard the existing Esc/P check uses. Forcing maturity while the debug menu was open would have made `#pausedForDraft` true before the player could press backtick again, permanently trapping the (still-open) debug menu underneath the draft-card modal. Fixed by having the `DEBUG_SET_MATURITY` handler close the debug menu itself, before calling `#triggerGeneration`, whenever a generation triggers.
+4. **UI/sim desync after restart**: `ArenaScene.create()` resets god mode, scale, and timescale to shipped defaults on every restart, but the `DebugMenu` React component's displayed checkbox/button/slider state has no way to know that happened — enable God Mode, close the menu, restart via the *actual* Pause modal (Esc/P, which backtick does not gate), and the checkbox would still show "on" while the sim silently reset it to "off". Fixed by having each of those three controls (Tasks 6, 8, 9) reset its displayed value on the existing `RESTART_SIMULATION` event. Difficulty deliberately does *not* get this treatment, since Task 7 persists it into the registry specifically so it survives a restart — noted explicitly in Task 7 so it isn't "fixed" as an apparent oversight later.
