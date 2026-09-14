@@ -7,7 +7,6 @@ import {
   AEGIS,
   ARENA,
   AURA_RADIUS_BASE,
-  BARREN_MARGIN,
   CARBINE,
   CATALYST_VALUE,
   DEADZONE_RADIUS_FRACTION,
@@ -279,8 +278,8 @@ export class ArenaScene extends Phaser.Scene {
       FRAME.auraRing,
     );
     this.#barrenSprite.setDisplaySize(
-      (this.#auraRadius + BARREN_MARGIN) * 2,
-      (this.#auraRadius + BARREN_MARGIN) * 2,
+      this.#auraRadius * DEADZONE_RADIUS_FRACTION * 2,
+      this.#auraRadius * DEADZONE_RADIUS_FRACTION * 2,
     );
     this.#barrenSprite.setAlpha(0.25);
     this.#barrenSprite.setTint(0x6b7280);
@@ -489,8 +488,8 @@ export class ArenaScene extends Phaser.Scene {
           this.#auraRadius * 2,
         );
         this.#barrenSprite.setDisplaySize(
-          (this.#auraRadius + BARREN_MARGIN) * 2,
-          (this.#auraRadius + BARREN_MARGIN) * 2,
+          this.#auraRadius * DEADZONE_RADIUS_FRACTION * 2,
+          this.#auraRadius * DEADZONE_RADIUS_FRACTION * 2,
         );
       } else if (cardId === 'vacuum-coils') {
         bus.emit('CATALYSTS_CARRIED', {
