@@ -11,7 +11,9 @@ import {
   CARBINE,
   CATALYST_VALUE,
   DETONATOR,
+  DIRECTOR_PRESETS,
   GROWTH_CEILING,
+  isDifficultyMode,
   MELEE_COOLDOWN_MS,
   MUZZLE_OFFSET,
   PLAYER,
@@ -21,6 +23,7 @@ import {
   TREE_POS,
   UPGRADE_EFFECTS,
 } from '../config';
+import type { DifficultyMode } from '../config';
 import { FRAME } from '../frames';
 import { BulletPool } from '../entities/BulletPool';
 import { CanisterPool } from '../entities/CanisterPool';
@@ -117,6 +120,11 @@ export class ArenaScene extends Phaser.Scene {
     return AURA_RADIUS_BASE + this.#upgrades.auraRadiusBonus;
   }
 
+  #difficultyMode(): DifficultyMode {
+    const value: unknown = this.game.registry.get('difficulty');
+    return isDifficultyMode(value) ? value : 'hard';
+  }
+
   #triggerGeneration(generation: number): void {
     this.#audio.generation();
     this.#aegis.grantCharge(this.#upgrades.aegisCapacity);
@@ -189,7 +197,10 @@ export class ArenaScene extends Phaser.Scene {
     this.#aegis = new AegisSystem();
     this.#carry = new CarrySystem();
     this.#pity = new PityDropSystem();
-    this.#director = new SpawnDirector();
+    this.#director = new SpawnDirector(
+      Math.random,
+      DIRECTOR_PRESETS[this.#difficultyMode()],
+    );
     this.#upgrades = new UpgradeSystem();
     this.#scores = new ScoreSystem();
 
