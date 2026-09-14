@@ -53,22 +53,25 @@ React never touches Phaser internals directly — `ArenaScene` subscribes to
 each event and mutates its own live state, same boundary rule as every
 other React→Phaser control today.
 
-## Display + hitbox scale
+## Display scale (visual only)
 
 - Current shipped `displaySize` values (player, swarmer, brute, detonator,
   canister) and `TREE.phaseSizes` are the reference point and correspond to
   menu tier **2**.
 - Formula: `applied = shippedValue * (tier / 2)` for tiers `0.75 | 1 | 1.5 | 2`.
-- Applies uniformly to **both** the sprite's display size and its physics
-  body (radius/size) — selecting a tier changes real hitboxes, not just
-  visuals.
+- **Visual only.** Applies to `setDisplaySize` calls (and the tree's
+  phase-size draw) — physics bodies are untouched. This matches how the
+  shipped 2.5x bump already works today: collision in `ArenaScene` runs on
+  Phaser's default Arcade body (native sprite-frame size) for every entity,
+  not on the `radius` fields in `config.ts` — those are declared but never
+  read anywhere in `src/`. Wiring real per-entity hitboxes is out of scope
+  for this feature; the scale slider does not change collision behavior.
 - `config.ts` base values are untouched; the scale is a runtime multiplier
   layer applied on top of them.
 - On tier change, resize immediately:
   - Player and tree are singletons — resize directly.
   - Enemies and canisters are pooled — iterate each pool's active members
-    and call `setDisplaySize` + resize the Arcade body (`setCircle`/
-    `setSize`) on each.
+    and call `setDisplaySize` on each.
   - Newly spawned entities after a tier change read the currently active
     tier.
 
@@ -77,17 +80,23 @@ other React→Phaser control today.
 - Menu shows **Easy / Medium / Advanced** — "Advanced" is a display label
   only, mapping to the existing `hard` key in `DIRECTOR_PRESETS`
   (`src/game/config.ts`). No new preset is added.
-- Selecting a mode calls the spawn director's existing preset-apply path
-  with `DIRECTOR_PRESETS[mode]` live, mid-run — the same object the title
-  screen already picks from.
+- Selecting a mode replaces `ArenaScene`'s `#director` field with a new
+  `SpawnDirector(rng, DIRECTOR_PRESETS[mode])` — same constructor the title
+  screen's choice already flows into (`ArenaScene.ts:201`); there is no
+  live-mutable "set preset" method on `SpawnDirector`, so a fresh instance
+  is created. Its elapsed-time counter restarts at 0, meaning unlock timers
+  (`unlockAtSec`) restart too — acceptable for a debug tool, not something
+  the title-screen path needs to handle.
 
 ## God mode
 
 - Checkbox → `DEBUG_SET_GOD_MODE`.
-- When enabled: incoming player damage is short-circuited to 0 before the
-  existing HP-change logic runs. All three weapons skip reserve-regen
-  gating and clip-empty checks (infinite clip and reserve, no reload
-  state).
+- When enabled: incoming player damage is short-circuited to 0. There are
+  two existing HP-reduction call sites in `ArenaScene` — melee contact
+  (`~line 874`) and the detonator explosion (`~line 1119`) — both must be
+  guarded, since there is no single chokepoint function today. All three
+  weapons skip reserve-regen gating and clip-empty checks (infinite clip
+  and reserve, no reload state).
 - Disabling it removes the short-circuit; normal HP/ammo rules resume from
   whatever state they're currently in — no snapshot/restore needed.
 
@@ -96,15 +105,23 @@ other React→Phaser control today.
 - **Timescale** (0.5x–3x slider): sets `this.time.timeScale` and
   `this.physics.world.timeScale` on `ArenaScene`. Independent of the
   display-scale slider — this changes simulation speed, not size.
-- **Force-spawn**: three buttons (Swarmer / Detonator / Brute) call the
-  spawn director's existing single-spawn path directly, bypassing the
-  threat-budget gate.
-- **Kill All**: iterates the active enemy pool and runs each enemy through
-  its normal death path (loot drops, pool return) — no special-cased
-  instant despawn.
-- **Force 100% maturity**: sets tree maturity to 100% and fires the
-  existing Generation-reached path (draft cards etc.) exactly as natural
-  growth would — no bypass of the upgrade-draft flow.
+- **Force-spawn**: three buttons (Swarmer / Detonator / Brute) call
+  `ArenaScene`'s existing private `#spawnAtEdge(kind)` directly, bypassing
+  the threat-budget gate — the same single-spawn entry point the director
+  loop already calls.
+- **Kill All**: iterates the active enemy pool and, per enemy, replicates
+  the existing kill sequence used elsewhere in `ArenaScene` (e.g. the
+  bullet-overlap handler): `EnemyPool.kill(enemy)`, `#handleKillDrop`,
+  particle splatter, kill-count increment, and the kill sound. `kill()`
+  alone only deactivates the body — the loot/score/fx side effects are
+  currently the caller's responsibility at every call site, not bundled
+  into one function, so Kill All must replicate the full sequence rather
+  than call a single "kill" helper.
+- **Force 100% maturity**: calls the existing `TreeSystem.deliver(pct)`
+  with enough `pct` to reach 100%, then routes its result through
+  `ArenaScene`'s existing `#triggerGeneration` when `generationTriggered`
+  is true — the same path catalyst delivery already uses (`ArenaScene.ts:
+  706-710`). No bypass of the upgrade-draft flow.
 
 ## Testing
 
