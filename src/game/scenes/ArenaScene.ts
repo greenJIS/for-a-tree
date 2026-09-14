@@ -219,6 +219,8 @@ export class ArenaScene extends Phaser.Scene {
     this.#debugMenuOpen = false;
     this.#godMode = false;
     this.#scaleTier = 2;
+    this.time.timeScale = 1;
+    this.physics.world.timeScale = 1;
     this.#pausedForDraft = false;
     this.#pendingDraftGenerations = [];
     this.#elapsedSec = 0;
@@ -570,6 +572,11 @@ export class ArenaScene extends Phaser.Scene {
       this.#treeSprite.setDisplaySize(phaseSize, phaseSize);
     };
 
+    const onSetTimescale = ({ factor }: { factor: number }) => {
+      this.time.timeScale = factor;
+      this.physics.world.timeScale = factor;
+    };
+
     bus.on('APPLY_UPGRADE_SELECTION', onApplyUpgrade);
     bus.on('RESUME_FROM_DRAFT', onResumeFromDraft);
     bus.on('TOGGLE_PAUSE', onTogglePause);
@@ -577,6 +584,7 @@ export class ArenaScene extends Phaser.Scene {
     bus.on('DEBUG_SET_GOD_MODE', onSetGodMode);
     bus.on('DEBUG_SET_DIFFICULTY', onSetDifficulty);
     bus.on('DEBUG_SET_SCALE', onSetScale);
+    bus.on('DEBUG_SET_TIMESCALE', onSetTimescale);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       window.removeEventListener('blur', onBlur);
@@ -587,6 +595,7 @@ export class ArenaScene extends Phaser.Scene {
       bus.off('DEBUG_SET_GOD_MODE', onSetGodMode);
       bus.off('DEBUG_SET_DIFFICULTY', onSetDifficulty);
       bus.off('DEBUG_SET_SCALE', onSetScale);
+      bus.off('DEBUG_SET_TIMESCALE', onSetTimescale);
     });
   }
 

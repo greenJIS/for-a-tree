@@ -28,6 +28,7 @@ export function DebugMenu() {
   const [godMode, setGodMode] = useState(false);
   const [difficulty, setDifficulty] = useState<DifficultyMode>('hard');
   const [scaleTier, setScaleTier] = useState<ScaleTier>(2);
+  const [timescale, setTimescaleState] = useState(1);
 
   useEffect(() => {
     const onToggle = ({ open: nowOpen }: { open: boolean }) => {
@@ -54,7 +55,7 @@ export function DebugMenu() {
     const onRestart = () => {
       setGodMode(false);
       setScaleTier(2);
-      // Task 9 adds: setTimescaleState(1);
+      setTimescaleState(1);
     };
     bus.on('RESTART_SIMULATION', onRestart);
     return () => bus.off('RESTART_SIMULATION', onRestart);
@@ -192,6 +193,27 @@ export function DebugMenu() {
                 </button>
               ))}
             </div>
+          </div>
+          <div className="border border-sand-800 bg-sand-950 p-3">
+            <div className="flex justify-between">
+              <p className="text-[10px] tracking-wider text-tether uppercase">
+                Timescale
+              </p>
+              <p className="text-xs text-white/60">{timescale.toFixed(1)}x</p>
+            </div>
+            <input
+              type="range"
+              min={0.5}
+              max={3}
+              step={0.1}
+              value={timescale}
+              onChange={(e) => {
+                const factor = Number(e.target.value);
+                setTimescaleState(factor);
+                bus.emit('DEBUG_SET_TIMESCALE', { factor });
+              }}
+              className="mt-2 w-full accent-tether"
+            />
           </div>
         </div>
       ) : (
