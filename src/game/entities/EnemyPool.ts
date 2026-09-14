@@ -26,7 +26,7 @@ type Stats = {
 const STATS: Record<MutantKind, Stats> = {
   swarmer: {
     frame: FRAME.swarmer,
-    displaySize: 36,
+    displaySize: SWARMER.displaySize,
     speed: SWARMER.speed,
     hp: SWARMER.hp,
     melee: SWARMER.melee,
