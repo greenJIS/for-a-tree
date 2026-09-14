@@ -7,10 +7,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 "For a Tree" — a top-down sci-fi survival action game for desktop browsers. Hackathon scope:
 solo developer, 36 hours, art already complete.
 
-**The core loop is implemented and playable.** Player, tree/maturity, tether/grace, weapons,
-mutants, spawn director, draft upgrades, HUD, pause/restart, and procedural audio are mounted
-and wired through the event bus. Ongoing work is a polish pass — see
-`docs/superpowers/specs/2026-09-13-polish-pass-design.md` for the current punch list.
+**The core loop is implemented and playable.** Title screen with three difficulty modes, player,
+tree/maturity, tether/grace, three weapons, three mutant types, spawn director, draft upgrades,
+HUD, pause/restart, and procedural audio are mounted and wired through the event bus. Ongoing
+work is a polish pass — see the dated specs in `docs/superpowers/specs/` (newest first) for the
+current punch list. Player-facing controls and mechanics are documented in
+[WALKTHROUGH.md](WALKTHROUGH.md); keep it in sync with `src/game/config.ts` and the actual key
+bindings in `ArenaScene.ts`/`Player.ts` when either changes.
 
 ## The SRS and the loop-correction delta are the source of truth
 
@@ -38,10 +41,12 @@ were all deliberately cut, and section 10 lists them as deleted rather than defe
 | `npm run lint`                    | ESLint across the project                                      |
 | `npx prettier --write .`          | Format; config in `.prettierrc.json`, no hook is wired         |
 | `npx markdownlint-cli2 "**/*.md"` | Lint Markdown; config in `.markdownlint-cli2.jsonc`            |
+| `npm run test`                    | Run the Vitest suite once                                      |
+| `npm run test:watch`              | Vitest in watch mode                                           |
 
-There is no test runner yet. Vitest is the intended choice when one is added.
-
-`npm run lint` does not type-check — use `npm run build` for that.
+Vitest specs sit next to the module they cover (`Foo.ts` / `Foo.test.ts`), scoped to
+`src/**/*.test.ts` in `vite.config.ts`. `npm run lint` does not type-check — use `npm run build`
+for that.
 
 ## Architecture
 
