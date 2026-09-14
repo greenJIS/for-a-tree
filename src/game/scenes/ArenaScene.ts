@@ -577,6 +577,22 @@ export class ArenaScene extends Phaser.Scene {
       this.physics.world.timeScale = factor;
     };
 
+    const onSpawnEnemy = ({ kind }: { kind: MutantKind }) => {
+      this.#spawnAtEdge(kind);
+    };
+    const onKillAll = () => {
+      for (const child of this.#enemies.group.getChildren()) {
+        if (!isArcadeImage(child) || !child.active) continue;
+        const killX = child.x;
+        const killY = child.y;
+        EnemyPool.kill(child);
+        this.#kills += 1;
+        this.#handleKillDrop(killX, killY);
+        this.#particles.splatter(killX, killY);
+        this.#audio.alienSplat();
+      }
+    };
+
     bus.on('APPLY_UPGRADE_SELECTION', onApplyUpgrade);
     bus.on('RESUME_FROM_DRAFT', onResumeFromDraft);
     bus.on('TOGGLE_PAUSE', onTogglePause);
@@ -585,6 +601,8 @@ export class ArenaScene extends Phaser.Scene {
     bus.on('DEBUG_SET_DIFFICULTY', onSetDifficulty);
     bus.on('DEBUG_SET_SCALE', onSetScale);
     bus.on('DEBUG_SET_TIMESCALE', onSetTimescale);
+    bus.on('DEBUG_SPAWN_ENEMY', onSpawnEnemy);
+    bus.on('DEBUG_KILL_ALL', onKillAll);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       window.removeEventListener('blur', onBlur);
@@ -596,6 +614,8 @@ export class ArenaScene extends Phaser.Scene {
       bus.off('DEBUG_SET_DIFFICULTY', onSetDifficulty);
       bus.off('DEBUG_SET_SCALE', onSetScale);
       bus.off('DEBUG_SET_TIMESCALE', onSetTimescale);
+      bus.off('DEBUG_SPAWN_ENEMY', onSpawnEnemy);
+      bus.off('DEBUG_KILL_ALL', onKillAll);
     });
   }
 

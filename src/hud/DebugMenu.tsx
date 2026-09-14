@@ -4,6 +4,7 @@ import type { DifficultyMode } from '../game/config';
 import { bus } from '../game/eventBus';
 import { pinAuth } from '../game/debug/pinAuth';
 import { SCALE_TIERS, type ScaleTier } from '../game/debug/scale';
+import type { MutantKind } from '../game/systems/SpawnDirector';
 
 type Screen = 'set-1' | 'set-2' | 'enter' | 'menu';
 
@@ -18,6 +19,12 @@ const DIFFICULTY_LABELS: Record<DifficultyMode, string> = {
   medium: 'Medium',
   hard: 'Advanced',
 };
+
+const SPAWN_KINDS: { kind: MutantKind; label: string }[] = [
+  { kind: 'swarmer', label: '+ Swarmer' },
+  { kind: 'detonator', label: '+ Detonator' },
+  { kind: 'brute', label: '+ Brute' },
+];
 
 export function DebugMenu() {
   const [open, setOpen] = useState(false);
@@ -214,6 +221,30 @@ export function DebugMenu() {
               }}
               className="mt-2 w-full accent-tether"
             />
+          </div>
+          <div className="border border-sand-800 bg-sand-950 p-3">
+            <p className="text-[10px] tracking-wider text-tether uppercase">
+              Force Spawn
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {SPAWN_KINDS.map(({ kind, label }) => (
+                <button
+                  key={kind}
+                  type="button"
+                  onClick={() => bus.emit('DEBUG_SPAWN_ENEMY', { kind })}
+                  className="cursor-pointer rounded border border-sand-800 bg-sand-950 px-3 py-1.5 text-xs text-white/60 hover:border-tether"
+                >
+                  {label}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => bus.emit('DEBUG_KILL_ALL')}
+                className="cursor-pointer rounded bg-decay px-3 py-1.5 text-xs font-semibold text-sand-950"
+              >
+                Kill All
+              </button>
+            </div>
           </div>
         </div>
       ) : (
