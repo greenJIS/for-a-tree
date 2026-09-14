@@ -17,6 +17,7 @@ export function DebugMenu() {
   const [digits, setDigits] = useState('');
   const [firstPin, setFirstPin] = useState('');
   const [error, setError] = useState(false);
+  const [godMode, setGodMode] = useState(false);
 
   useEffect(() => {
     const onToggle = ({ open: nowOpen }: { open: boolean }) => {
@@ -41,8 +42,8 @@ export function DebugMenu() {
   // they introduce; Task 7 (difficulty) deliberately adds none.
   useEffect(() => {
     const onRestart = () => {
-      // Tasks 6, 8, 9 add: setGodMode(false); setScaleTier(2);
-      // setTimescaleState(1);
+      setGodMode(false);
+      // Tasks 8, 9 add: setScaleTier(2); setTimescaleState(1);
     };
     bus.on('RESTART_SIMULATION', onRestart);
     return () => bus.off('RESTART_SIMULATION', onRestart);
@@ -112,7 +113,25 @@ export function DebugMenu() {
             </h2>
             <span className="text-xs text-white/30">` close</span>
           </div>
-          {/* Tasks 6-11 add controls here */}
+          <div className="flex items-center justify-between border border-sand-800 bg-sand-950 p-3">
+            <div>
+              <p className="text-[10px] tracking-wider text-grace uppercase">
+                God Mode
+              </p>
+              <p className="mt-0.5 text-[11px] text-white/40">
+                No damage + infinite ammo
+              </p>
+            </div>
+            <input
+              type="checkbox"
+              checked={godMode}
+              onChange={(e) => {
+                setGodMode(e.target.checked);
+                bus.emit('DEBUG_SET_GOD_MODE', { enabled: e.target.checked });
+              }}
+              className="h-5 w-5 accent-grace"
+            />
+          </div>
         </div>
       ) : (
         <div className="w-[280px] border border-tether bg-sand-900 p-5">

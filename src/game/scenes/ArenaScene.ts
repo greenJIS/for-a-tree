@@ -87,6 +87,7 @@ export class ArenaScene extends Phaser.Scene {
   #pKey?: Phaser.Input.Keyboard.Key;
   #backtickKey?: Phaser.Input.Keyboard.Key;
   #debugMenuOpen = false;
+  #godMode = false;
   #nextEnemyId = 0;
   #aegis = new AegisSystem();
   #aegisSprite!: Phaser.GameObjects.Image;
@@ -214,6 +215,7 @@ export class ArenaScene extends Phaser.Scene {
     this.#over = false;
     this.#isPaused = false;
     this.#debugMenuOpen = false;
+    this.#godMode = false;
     this.#pausedForDraft = false;
     this.#pendingDraftGenerations = [];
     this.#elapsedSec = 0;
@@ -543,10 +545,16 @@ export class ArenaScene extends Phaser.Scene {
       this.scene.restart();
     };
 
+    const onSetGodMode = ({ enabled }: { enabled: boolean }) => {
+      this.#godMode = enabled;
+      this.#weapons.setGodMode(enabled);
+    };
+
     bus.on('APPLY_UPGRADE_SELECTION', onApplyUpgrade);
     bus.on('RESUME_FROM_DRAFT', onResumeFromDraft);
     bus.on('TOGGLE_PAUSE', onTogglePause);
     bus.on('RESTART_SIMULATION', onRestartSimulation);
+    bus.on('DEBUG_SET_GOD_MODE', onSetGodMode);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       window.removeEventListener('blur', onBlur);
@@ -554,6 +562,7 @@ export class ArenaScene extends Phaser.Scene {
       bus.off('RESUME_FROM_DRAFT', onResumeFromDraft);
       bus.off('TOGGLE_PAUSE', onTogglePause);
       bus.off('RESTART_SIMULATION', onRestartSimulation);
+      bus.off('DEBUG_SET_GOD_MODE', onSetGodMode);
     });
   }
 
@@ -882,7 +891,7 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   #takeMeleeFrom(enemy: Phaser.Physics.Arcade.Image): void {
-    if (this.#over || !enemy.active) return;
+    if (this.#over || this.#godMode || !enemy.active) return;
     if (this.#aegis.isActive(this.time.now)) return;
 
     const now = this.time.now;
@@ -1134,7 +1143,7 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   #takeExplosionDamage(damage: number): void {
-    if (this.#over) return;
+    if (this.#over || this.#godMode) return;
     if (this.#aegis.isActive(this.time.now)) return;
 
     this.#hp = Math.max(0, this.#hp - damage);
