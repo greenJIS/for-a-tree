@@ -7,6 +7,9 @@
  * rendering only and must never write game state.
  */
 import mitt from 'mitt';
+import type { DifficultyMode } from './config';
+import type { ScaleTier } from './debug/scale';
+import type { MutantKind } from './systems/SpawnDirector';
 
 export type TetherState = 'tethered' | 'grace' | 'decaying';
 
@@ -66,6 +69,16 @@ export type GameEvents = {
   RESUME_FROM_DRAFT: void;
   TOGGLE_PAUSE: void;
   RESTART_SIMULATION: void;
+
+  // React -> Phaser (debug menu)
+  DEBUG_MENU_TOGGLED: { open: boolean };
+  DEBUG_SET_SCALE: { tier: ScaleTier };
+  DEBUG_SET_DIFFICULTY: { mode: DifficultyMode };
+  DEBUG_SET_GOD_MODE: { enabled: boolean };
+  DEBUG_SET_TIMESCALE: { factor: number };
+  DEBUG_SPAWN_ENEMY: { kind: MutantKind };
+  DEBUG_KILL_ALL: void;
+  DEBUG_SET_MATURITY: { pct: number };
 };
 
 export const bus = mitt<GameEvents>();
