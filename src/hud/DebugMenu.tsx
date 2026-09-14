@@ -1,5 +1,6 @@
 /** Secret PIN-gated debug overlay. Backtick to open, z-30 modal layer. */
 import { useEffect, useState } from 'react';
+import type { DifficultyMode } from '../game/config';
 import { bus } from '../game/eventBus';
 import { pinAuth } from '../game/debug/pinAuth';
 
@@ -11,6 +12,12 @@ const KEYPAD_ROWS: string[][] = [
   ['7', '8', '9'],
 ];
 
+const DIFFICULTY_LABELS: Record<DifficultyMode, string> = {
+  easy: 'Easy',
+  medium: 'Medium',
+  hard: 'Advanced',
+};
+
 export function DebugMenu() {
   const [open, setOpen] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
@@ -18,6 +25,7 @@ export function DebugMenu() {
   const [firstPin, setFirstPin] = useState('');
   const [error, setError] = useState(false);
   const [godMode, setGodMode] = useState(false);
+  const [difficulty, setDifficulty] = useState<DifficultyMode>('hard');
 
   useEffect(() => {
     const onToggle = ({ open: nowOpen }: { open: boolean }) => {
@@ -131,6 +139,32 @@ export function DebugMenu() {
               }}
               className="h-5 w-5 accent-grace"
             />
+          </div>
+          <div className="border border-sand-800 bg-sand-950 p-3">
+            <p className="text-[10px] tracking-wider text-tether uppercase">
+              Difficulty Override
+            </p>
+            <div className="mt-2 flex gap-2">
+              {(Object.keys(DIFFICULTY_LABELS) as DifficultyMode[]).map(
+                (mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => {
+                      setDifficulty(mode);
+                      bus.emit('DEBUG_SET_DIFFICULTY', { mode });
+                    }}
+                    className={`cursor-pointer rounded px-3 py-1.5 text-xs ${
+                      difficulty === mode
+                        ? 'border border-tether bg-sand-800 text-tether'
+                        : 'border border-sand-800 bg-sand-950 text-white/60'
+                    }`}
+                  >
+                    {DIFFICULTY_LABELS[mode]}
+                  </button>
+                ),
+              )}
+            </div>
           </div>
         </div>
       ) : (

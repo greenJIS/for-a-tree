@@ -550,11 +550,17 @@ export class ArenaScene extends Phaser.Scene {
       this.#weapons.setGodMode(enabled);
     };
 
+    const onSetDifficulty = ({ mode }: { mode: DifficultyMode }) => {
+      this.game.registry.set('difficulty', mode);
+      this.#director = new SpawnDirector(Math.random, DIRECTOR_PRESETS[mode]);
+    };
+
     bus.on('APPLY_UPGRADE_SELECTION', onApplyUpgrade);
     bus.on('RESUME_FROM_DRAFT', onResumeFromDraft);
     bus.on('TOGGLE_PAUSE', onTogglePause);
     bus.on('RESTART_SIMULATION', onRestartSimulation);
     bus.on('DEBUG_SET_GOD_MODE', onSetGodMode);
+    bus.on('DEBUG_SET_DIFFICULTY', onSetDifficulty);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       window.removeEventListener('blur', onBlur);
@@ -563,6 +569,7 @@ export class ArenaScene extends Phaser.Scene {
       bus.off('TOGGLE_PAUSE', onTogglePause);
       bus.off('RESTART_SIMULATION', onRestartSimulation);
       bus.off('DEBUG_SET_GOD_MODE', onSetGodMode);
+      bus.off('DEBUG_SET_DIFFICULTY', onSetDifficulty);
     });
   }
 
