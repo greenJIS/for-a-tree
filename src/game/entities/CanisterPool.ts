@@ -11,6 +11,7 @@ import { CANISTER } from '../config';
 import { computeCanisterRest } from '../systems/CanisterPhysics';
 import { FRAME } from '../frames';
 import type { CatalystTier } from '../eventBus';
+import { applyScaleTier, type ScaleTier } from '../debug/scale';
 
 const TIER_TINT: Record<CatalystTier, number> = {
   silt: 0xa8875a,
@@ -21,6 +22,7 @@ const TIER_TINT: Record<CatalystTier, number> = {
 export class CanisterPool {
   readonly group: Phaser.GameObjects.Group;
   readonly #scene: Phaser.Scene;
+  #scaleTier: ScaleTier = 2;
 
   constructor(scene: Phaser.Scene, size: number) {
     this.#scene = scene;
@@ -58,7 +60,8 @@ export class CanisterPool {
     canister.setActive(true);
     canister.setVisible(true);
     canister.setPosition(killX, killY);
-    canister.setDisplaySize(CANISTER.displaySize, CANISTER.displaySize);
+    const size = applyScaleTier(CANISTER.displaySize, this.#scaleTier);
+    canister.setDisplaySize(size, size);
     const baseScale = canister.scaleX;
     canister.setScale(baseScale * 1.3);
     canister.setAlpha(1);
@@ -94,6 +97,10 @@ export class CanisterPool {
         });
       },
     });
+  }
+
+  setScaleTier(tier: ScaleTier): void {
+    this.#scaleTier = tier;
   }
 
   /** Magnet pull toward the player, plus lifetime and despawn flashing. */

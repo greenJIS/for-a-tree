@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import type { DifficultyMode } from '../game/config';
 import { bus } from '../game/eventBus';
 import { pinAuth } from '../game/debug/pinAuth';
+import { SCALE_TIERS, type ScaleTier } from '../game/debug/scale';
 
 type Screen = 'set-1' | 'set-2' | 'enter' | 'menu';
 
@@ -26,6 +27,7 @@ export function DebugMenu() {
   const [error, setError] = useState(false);
   const [godMode, setGodMode] = useState(false);
   const [difficulty, setDifficulty] = useState<DifficultyMode>('hard');
+  const [scaleTier, setScaleTier] = useState<ScaleTier>(2);
 
   useEffect(() => {
     const onToggle = ({ open: nowOpen }: { open: boolean }) => {
@@ -51,7 +53,8 @@ export function DebugMenu() {
   useEffect(() => {
     const onRestart = () => {
       setGodMode(false);
-      // Tasks 8, 9 add: setScaleTier(2); setTimescaleState(1);
+      setScaleTier(2);
+      // Task 9 adds: setTimescaleState(1);
     };
     bus.on('RESTART_SIMULATION', onRestart);
     return () => bus.off('RESTART_SIMULATION', onRestart);
@@ -164,6 +167,30 @@ export function DebugMenu() {
                   </button>
                 ),
               )}
+            </div>
+          </div>
+          <div className="border border-sand-800 bg-sand-950 p-3">
+            <p className="text-[10px] tracking-wider text-tether uppercase">
+              Display Scale
+            </p>
+            <div className="mt-2 flex gap-2">
+              {SCALE_TIERS.map((tier) => (
+                <button
+                  key={tier}
+                  type="button"
+                  onClick={() => {
+                    setScaleTier(tier);
+                    bus.emit('DEBUG_SET_SCALE', { tier });
+                  }}
+                  className={`cursor-pointer rounded px-3 py-1.5 text-xs ${
+                    scaleTier === tier
+                      ? 'border border-tether bg-sand-800 text-tether'
+                      : 'border border-sand-800 bg-sand-950 text-white/60'
+                  }`}
+                >
+                  {tier}x
+                </button>
+              ))}
             </div>
           </div>
         </div>

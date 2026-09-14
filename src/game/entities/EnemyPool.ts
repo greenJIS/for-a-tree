@@ -12,6 +12,7 @@ import { BRUTE, DETONATOR, DIRECTOR, SWARMER } from '../config';
 import { FRAME } from '../frames';
 import { isArcadeImage } from '../guards';
 import type { MutantKind } from '../systems/SpawnDirector';
+import { applyScaleTier, type ScaleTier } from '../debug/scale';
 
 type Stats = {
   frame: number;
@@ -56,6 +57,7 @@ const STATS: Record<MutantKind, Stats> = {
 export class EnemyPool {
   readonly group: Phaser.Physics.Arcade.Group;
   readonly #scene: Phaser.Scene;
+  #scaleTier: ScaleTier = 2;
 
   constructor(scene: Phaser.Scene, size: number) {
     this.#scene = scene;
@@ -93,13 +95,23 @@ export class EnemyPool {
     enemy.enableBody(true, x, y, true, true);
     enemy.setAlpha(1);
     enemy.setFrame(stats.frame);
-    enemy.setDisplaySize(stats.displaySize, stats.displaySize);
+    const size = applyScaleTier(stats.displaySize, this.#scaleTier);
+    enemy.setDisplaySize(size, size);
     enemy.clearTint();
     enemy.setData('kind', kind);
     enemy.setData('hp', stats.hp * hpMult);
     enemy.setData('melee', stats.melee * dmgMult);
     enemy.setData('nextMeleeAtMs', 0);
     enemy.setData('lockedUntilMs', 0);
+  }
+
+  setScaleTier(tier: ScaleTier): void {
+    this.#scaleTier = tier;
+    for (const child of this.group.getChildren()) {
+      if (!isArcadeImage(child) || !child.active) continue;
+      const size = applyScaleTier(STATS[EnemyPool.kind(child)].displaySize, tier);
+      child.setDisplaySize(size, size);
+    }
   }
 
   /** Recompute every live pursuit vector. */

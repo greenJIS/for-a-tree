@@ -6,6 +6,7 @@ import Phaser from 'phaser';
 import { ARENA, DASH, PLAYER } from '../config';
 import { FRAME } from '../frames';
 import { bus } from '../eventBus';
+import { applyScaleTier, type ScaleTier } from '../debug/scale';
 
 export class Player {
   readonly sprite: Phaser.Physics.Arcade.Image;
@@ -17,6 +18,7 @@ export class Player {
     left: Phaser.Input.Keyboard.Key[];
     right: Phaser.Input.Keyboard.Key[];
   };
+  #scaleTier: ScaleTier = 2;
   #dashUntilMs = 0;
   #dashReadyAtMs = 0;
   #dashVector = new Phaser.Math.Vector2(0, 0);
@@ -27,7 +29,10 @@ export class Player {
     this.#scene = scene;
 
     this.sprite = scene.physics.add.image(x, y, 'sheet', FRAME.player);
-    this.sprite.setDisplaySize(PLAYER.displaySize, PLAYER.displaySize);
+    this.sprite.setDisplaySize(
+      applyScaleTier(PLAYER.displaySize, this.#scaleTier),
+      applyScaleTier(PLAYER.displaySize, this.#scaleTier),
+    );
     this.sprite.setCollideWorldBounds(true);
     scene.physics.world.setBounds(0, 0, ARENA.width, ARENA.height);
 
@@ -105,6 +110,12 @@ export class Player {
     return true;
   }
 
+  rescale(tier: ScaleTier): void {
+    this.#scaleTier = tier;
+    const size = applyScaleTier(PLAYER.displaySize, tier);
+    this.sprite.setDisplaySize(size, size);
+  }
+
   #spawnGhost(): void {
     const ghost = this.#scene.add.image(
       this.sprite.x,
@@ -112,7 +123,10 @@ export class Player {
       'sheet',
       FRAME.player,
     );
-    ghost.setDisplaySize(PLAYER.displaySize, PLAYER.displaySize);
+    ghost.setDisplaySize(
+      applyScaleTier(PLAYER.displaySize, this.#scaleTier),
+      applyScaleTier(PLAYER.displaySize, this.#scaleTier),
+    );
     ghost.setRotation(this.sprite.rotation);
     ghost.setAlpha(0.4);
     this.#scene.tweens.add({

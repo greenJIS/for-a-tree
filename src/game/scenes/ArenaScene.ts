@@ -43,6 +43,7 @@ import { ParticleFX } from '../systems/ParticleFX';
 import { SoundEffects } from '../audio/SoundEffects';
 import { bus } from '../eventBus';
 import type { TetherState } from '../eventBus';
+import { applyScaleTier, type ScaleTier } from '../debug/scale';
 import { isArcadeImage } from '../guards';
 import spritesheetUrl from '../../assets/spritesheet.png';
 import groundUrl from '../../assets/ground.png';
@@ -88,6 +89,7 @@ export class ArenaScene extends Phaser.Scene {
   #backtickKey?: Phaser.Input.Keyboard.Key;
   #debugMenuOpen = false;
   #godMode = false;
+  #scaleTier: ScaleTier = 2;
   #nextEnemyId = 0;
   #aegis = new AegisSystem();
   #aegisSprite!: Phaser.GameObjects.Image;
@@ -216,6 +218,7 @@ export class ArenaScene extends Phaser.Scene {
     this.#isPaused = false;
     this.#debugMenuOpen = false;
     this.#godMode = false;
+    this.#scaleTier = 2;
     this.#pausedForDraft = false;
     this.#pendingDraftGenerations = [];
     this.#elapsedSec = 0;
@@ -555,12 +558,25 @@ export class ArenaScene extends Phaser.Scene {
       this.#director = new SpawnDirector(Math.random, DIRECTOR_PRESETS[mode]);
     };
 
+    const onSetScale = ({ tier }: { tier: ScaleTier }) => {
+      this.#scaleTier = tier;
+      this.#player.rescale(tier);
+      this.#enemies.setScaleTier(tier);
+      this.#canisters.setScaleTier(tier);
+      const phaseSize = applyScaleTier(
+        TREE.phaseSizes[this.#tree.phase],
+        this.#scaleTier,
+      );
+      this.#treeSprite.setDisplaySize(phaseSize, phaseSize);
+    };
+
     bus.on('APPLY_UPGRADE_SELECTION', onApplyUpgrade);
     bus.on('RESUME_FROM_DRAFT', onResumeFromDraft);
     bus.on('TOGGLE_PAUSE', onTogglePause);
     bus.on('RESTART_SIMULATION', onRestartSimulation);
     bus.on('DEBUG_SET_GOD_MODE', onSetGodMode);
     bus.on('DEBUG_SET_DIFFICULTY', onSetDifficulty);
+    bus.on('DEBUG_SET_SCALE', onSetScale);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       window.removeEventListener('blur', onBlur);
@@ -570,6 +586,7 @@ export class ArenaScene extends Phaser.Scene {
       bus.off('RESTART_SIMULATION', onRestartSimulation);
       bus.off('DEBUG_SET_GOD_MODE', onSetGodMode);
       bus.off('DEBUG_SET_DIFFICULTY', onSetDifficulty);
+      bus.off('DEBUG_SET_SCALE', onSetScale);
     });
   }
 
@@ -879,7 +896,10 @@ export class ArenaScene extends Phaser.Scene {
       bus.emit('GROWTH_STALLED', { ceilingPct: GROWTH_CEILING });
     }
 
-    const phaseSize = TREE.phaseSizes[this.#tree.phase];
+    const phaseSize = applyScaleTier(
+      TREE.phaseSizes[this.#tree.phase],
+      this.#scaleTier,
+    );
     this.#treeSprite.setDisplaySize(phaseSize, phaseSize);
     this.#treeSprite.setFrame(
       this.#tree.phase === 1 ? FRAME.treeSprout : FRAME.treeSapling,
