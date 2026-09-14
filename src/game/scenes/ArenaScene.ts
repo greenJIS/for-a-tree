@@ -85,6 +85,8 @@ export class ArenaScene extends Phaser.Scene {
   #key3?: Phaser.Input.Keyboard.Key;
   #escKey?: Phaser.Input.Keyboard.Key;
   #pKey?: Phaser.Input.Keyboard.Key;
+  #backtickKey?: Phaser.Input.Keyboard.Key;
+  #debugMenuOpen = false;
   #nextEnemyId = 0;
   #aegis = new AegisSystem();
   #aegisSprite!: Phaser.GameObjects.Image;
@@ -211,6 +213,7 @@ export class ArenaScene extends Phaser.Scene {
     this.#catalystsDeliveredCount = 0;
     this.#over = false;
     this.#isPaused = false;
+    this.#debugMenuOpen = false;
     this.#pausedForDraft = false;
     this.#pendingDraftGenerations = [];
     this.#elapsedSec = 0;
@@ -333,6 +336,9 @@ export class ArenaScene extends Phaser.Scene {
       this.#key3 = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.THREE);
       this.#escKey = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
       this.#pKey = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
+      this.#backtickKey = keyboard.addKey(
+        Phaser.Input.Keyboard.KeyCodes.BACKTICK,
+      );
     }
 
     this.physics.add.overlap(
@@ -558,6 +564,21 @@ export class ArenaScene extends Phaser.Scene {
         (this.#pKey && Phaser.Input.Keyboard.JustDown(this.#pKey))
       ) {
         bus.emit('TOGGLE_PAUSE');
+      }
+      if (
+        this.#backtickKey &&
+        Phaser.Input.Keyboard.JustDown(this.#backtickKey)
+      ) {
+        this.#debugMenuOpen = !this.#debugMenuOpen;
+        this.#isPaused = this.#debugMenuOpen;
+        if (this.#debugMenuOpen) {
+          this.physics.pause();
+          this.#audio.setMusicIntensity(false);
+        } else {
+          this.physics.resume();
+          this.#audio.setMusicIntensity(true);
+        }
+        bus.emit('DEBUG_MENU_TOGGLED', { open: this.#debugMenuOpen });
       }
     }
 

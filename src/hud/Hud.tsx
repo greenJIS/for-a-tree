@@ -10,6 +10,7 @@ import { GameOverCard } from './GameOverCard';
 import { HealthBar } from './HealthBar';
 import { MaturityGauge } from './MaturityGauge';
 import { PauseModal } from './PauseModal';
+import { DebugMenu } from './DebugMenu';
 import { ReloadIndicator } from './ReloadIndicator';
 import { ScoreReadout } from './ScoreReadout';
 import { TetherBeacon } from './TetherBeacon';
@@ -46,6 +47,7 @@ export function Hud() {
       <DraftModal />
       <GameOverCard />
       <PauseModal />
+      <DebugMenu />
     </div>
   );
 }
