@@ -592,6 +592,17 @@ export class ArenaScene extends Phaser.Scene {
         this.#audio.alienSplat();
       }
     };
+    const onSetMaturity = ({ pct }: { pct: number }) => {
+      const result = this.#tree.deliver(pct);
+      if (result.generationTriggered) {
+        if (this.#debugMenuOpen) {
+          this.#debugMenuOpen = false;
+          this.#isPaused = false;
+          bus.emit('DEBUG_MENU_TOGGLED', { open: false });
+        }
+        this.#triggerGeneration(result.generation);
+      }
+    };
 
     bus.on('APPLY_UPGRADE_SELECTION', onApplyUpgrade);
     bus.on('RESUME_FROM_DRAFT', onResumeFromDraft);
@@ -603,6 +614,7 @@ export class ArenaScene extends Phaser.Scene {
     bus.on('DEBUG_SET_TIMESCALE', onSetTimescale);
     bus.on('DEBUG_SPAWN_ENEMY', onSpawnEnemy);
     bus.on('DEBUG_KILL_ALL', onKillAll);
+    bus.on('DEBUG_SET_MATURITY', onSetMaturity);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       window.removeEventListener('blur', onBlur);
@@ -616,6 +628,7 @@ export class ArenaScene extends Phaser.Scene {
       bus.off('DEBUG_SET_TIMESCALE', onSetTimescale);
       bus.off('DEBUG_SPAWN_ENEMY', onSpawnEnemy);
       bus.off('DEBUG_KILL_ALL', onKillAll);
+      bus.off('DEBUG_SET_MATURITY', onSetMaturity);
     });
   }
 

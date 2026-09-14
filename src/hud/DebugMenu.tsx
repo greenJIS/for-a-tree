@@ -246,6 +246,18 @@ export function DebugMenu() {
               </button>
             </div>
           </div>
+          <div className="flex items-center justify-between border border-sand-800 bg-sand-950 p-3">
+            <p className="text-[10px] tracking-wider text-growth uppercase">
+              Tree Maturity
+            </p>
+            <button
+              type="button"
+              onClick={() => bus.emit('DEBUG_SET_MATURITY', { pct: 100 })}
+              className="cursor-pointer rounded bg-growth px-3 py-1.5 text-xs font-semibold text-sand-950"
+            >
+              Force 100%
+            </button>
+          </div>
         </div>
       ) : (
         <div className="w-[280px] border border-tether bg-sand-900 p-5">
