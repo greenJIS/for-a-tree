@@ -66,6 +66,11 @@ export const DEADZONE_RADIUS_FRACTION = 0.5;
   resized on aura-radius change): use
   `(this.#auraRadius * DEADZONE_RADIUS_FRACTION) * 2` instead of
   `(this.#auraRadius + BARREN_MARGIN) * 2`.
+- `ArenaScene.ts#handleKillDrop`'s doc-comment (currently: "Delta spec 4: a
+  kill inside barrenRadius produces no canister at all...") must be reworded
+  to describe the new `deadZoneRadius` gate instead of citing the old
+  barren-radius rule verbatim, so the comment doesn't contradict the code
+  beneath it.
 
 ### Out of scope
 
@@ -117,9 +122,19 @@ is spawn pressure only, per explicit confirmation.
 
 ## Testing
 
-- `SpawnDirector.test.ts` already exercises `DIRECTOR_PRESETS` shape; no new
-  test needed beyond confirming the new easy numbers don't break existing
-  assertions (they're data-only, not logic changes).
+- `SpawnDirector.test.ts` hardcodes the *current* easy-mode numbers as
+  assertions and **will break** once the preset changes:
+  - `'unlocks the Bio-Detonator at 75 seconds on Easy'` (line 112) asserts
+    `spawned` contains `'detonator'` at `t=75`; with the new 140s unlock this
+    fails and must be updated to `t=140`.
+  - `'does not unlock the Bio-Detonator before 75 seconds on Easy'` (line 102)
+    stays passing (still true, just a weaker check now) but should be updated
+    to assert against the new 140s boundary for clarity.
+  - The comment on line 123 (`targetThreat(60) on Easy = 1.8 + 60*0.1 = 7.8`)
+    is stale prose, not an assertion, but must be corrected to
+    `1.0 + 60*0.05 = 4.0` to avoid misleading future readers. The assertion
+    itself (`easy.update(0, 10).length` is `0`) still holds under the new
+    numbers since 4.0 < 10, so no logic change needed there.
 - No existing test covers the drop-gate radius directly (`ArenaScene` isn't
   unit-tested — it's exercised via manual play, per this session's debug-log
   approach). Manual verification: kill an enemy at a measured distance between
