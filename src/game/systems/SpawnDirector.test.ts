@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { DIRECTOR_PRESETS } from '../config';
 import { SpawnDirector } from './SpawnDirector';
 
 /** A scripted RNG: returns values from a fixed queue, in order. */
@@ -96,5 +97,45 @@ describe('SpawnDirector', () => {
     for (let t = 0; t < 60; t += 1) director.update(1, 100);
     const spawned = director.update(0, 12);
     expect(spawned.length).toBe(1);
+  });
+
+  it('does not unlock the Bio-Detonator before 75 seconds on Easy', () => {
+    const director = new SpawnDirector(
+      scriptedRng(new Array(20).fill(0.99)),
+      DIRECTOR_PRESETS.easy,
+    );
+    for (let t = 0; t < 74; t += 1) director.update(1, 100);
+    const spawned = director.update(0, 0);
+    expect(spawned).not.toContain('detonator');
+  });
+
+  it('unlocks the Bio-Detonator at 75 seconds on Easy', () => {
+    const director = new SpawnDirector(
+      scriptedRng(new Array(20).fill(0.99)),
+      DIRECTOR_PRESETS.easy,
+    );
+    for (let t = 0; t < 75; t += 1) director.update(1, 100);
+    const spawned = director.update(0, 0);
+    expect(spawned).toContain('detonator');
+  });
+
+  it('reaches a lower threat target on Easy than on Hard at the same elapsed time', () => {
+    // targetThreat(60) on Hard = 3 + 60/6 = 13; on Easy = 1.8 + 60*0.1 = 7.8.
+    // Pin aliveThreat at 10 -- above Easy's target (Easy spawns nothing)
+    // but below Hard's (Hard still needs to close a 3-point gap).
+    const hard = new SpawnDirector(
+      scriptedRng(new Array(20).fill(0)),
+      DIRECTOR_PRESETS.hard,
+    );
+    const easy = new SpawnDirector(
+      scriptedRng(new Array(20).fill(0)),
+      DIRECTOR_PRESETS.easy,
+    );
+    for (let t = 0; t < 60; t += 1) {
+      hard.update(1, 100);
+      easy.update(1, 100);
+    }
+    expect(hard.update(0, 10).length).toBeGreaterThan(0);
+    expect(easy.update(0, 10).length).toBe(0);
   });
 });

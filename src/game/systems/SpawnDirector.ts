@@ -7,7 +7,7 @@
  *
  * Pure TypeScript by design -- no Phaser import -- so it is unit-testable.
  */
-import { DIRECTOR } from '../config';
+import { DIRECTOR_PRESETS, type DirectorConfig } from '../config';
 
 export type MutantKind = 'swarmer' | 'brute' | 'detonator';
 
@@ -15,12 +15,17 @@ const UNLOCK_ORDER: MutantKind[] = ['swarmer', 'detonator', 'brute'];
 
 export class SpawnDirector {
   readonly #rng: () => number;
+  readonly #config: DirectorConfig;
   #elapsedSec = 0;
   #currentSecond = 0;
   #spawnedThisSecond = 0;
 
-  constructor(rng: () => number = Math.random) {
+  constructor(
+    rng: () => number = Math.random,
+    config: DirectorConfig = DIRECTOR_PRESETS.hard,
+  ) {
     this.#rng = rng;
+    this.#config = config;
   }
 
   /**
@@ -41,7 +46,7 @@ export class SpawnDirector {
     }
 
     const targetThreat =
-      DIRECTOR.baseThreat + elapsedBeforeUpdate * DIRECTOR.threatPerSec;
+      this.#config.baseThreat + elapsedBeforeUpdate * this.#config.threatPerSec;
     const unlocked = this.#unlockedKinds();
 
     const spawned: MutantKind[] = [];
@@ -49,7 +54,7 @@ export class SpawnDirector {
 
     while (
       projectedThreat < targetThreat &&
-      this.#spawnedThisSecond + spawned.length < DIRECTOR.maxSpawnsPerSecond
+      this.#spawnedThisSecond + spawned.length < this.#config.maxSpawnsPerSecond
     ) {
       const kind = unlocked[Math.floor(this.#rng() * unlocked.length)];
       spawned.push(kind);
@@ -62,7 +67,7 @@ export class SpawnDirector {
 
   #unlockedKinds(): MutantKind[] {
     return UNLOCK_ORDER.filter(
-      (kind) => this.#elapsedSec >= DIRECTOR.unlockAtSec[kind],
+      (kind) => this.#elapsedSec >= this.#config.unlockAtSec[kind],
     );
   }
 
