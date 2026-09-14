@@ -38,6 +38,7 @@ const WEAPON_CONFIGS: Record<WeaponId, WeaponConfig> = {
 export class WeaponInventory {
   #activeId: WeaponId = 'carbine';
   readonly #unlocked = new Set<WeaponId>(['carbine']);
+  #godMode = false;
 
   readonly #clips: Record<WeaponId, number> = {
     carbine: CARBINE.magSize,
@@ -80,23 +81,31 @@ export class WeaponInventory {
     return true;
   }
 
+  setGodMode(enabled: boolean): void {
+    this.#godMode = enabled;
+  }
+
   get activeAmmo(): { clip: number; reserve: number; reloading: boolean } {
     return this.getAmmo(this.#activeId);
   }
 
   get activeClip(): number {
-    return this.#clips[this.#activeId];
+    return this.getAmmo(this.#activeId).clip;
   }
 
   get activeReserve(): number {
-    return this.#reserves[this.#activeId];
+    return this.getAmmo(this.#activeId).reserve;
   }
 
   get isReloading(): boolean {
-    return this.#reloadRemainingMs[this.#activeId] > 0;
+    return this.getAmmo(this.#activeId).reloading;
   }
 
   getAmmo(id: WeaponId): { clip: number; reserve: number; reloading: boolean } {
+    if (this.#godMode) {
+      const cfg = WEAPON_CONFIGS[id];
+      return { clip: cfg.magSize, reserve: cfg.reserveCap, reloading: false };
+    }
     return {
       clip: this.#clips[id],
       reserve: this.#reserves[id],
@@ -105,6 +114,8 @@ export class WeaponInventory {
   }
 
   tryFire(): boolean {
+    if (this.#godMode) return true;
+
     const id = this.#activeId;
     if (this.#reloadRemainingMs[id] > 0 || this.#clips[id] <= 0) return false;
 
@@ -114,6 +125,7 @@ export class WeaponInventory {
   }
 
   startReload(): void {
+    if (this.#godMode) return;
     const id = this.#activeId;
     const cfg = WEAPON_CONFIGS[id];
     if (this.#reloadRemainingMs[id] > 0 || this.#clips[id] >= cfg.magSize) return;

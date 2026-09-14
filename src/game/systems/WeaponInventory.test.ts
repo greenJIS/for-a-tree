@@ -125,4 +125,36 @@ describe('WeaponInventory', () => {
     inv.startReload();
     expect(inv.activeAmmo.reloading).toBe(false);
   });
+
+  it('god mode: tryFire always succeeds without consuming the clip', () => {
+    inv.setGodMode(true);
+    for (let i = 0; i < 50; i += 1) {
+      expect(inv.tryFire()).toBe(true);
+    }
+    expect(inv.activeAmmo).toEqual({ clip: 24, reserve: 240, reloading: false });
+  });
+
+  it('god mode: reports full ammo even if the underlying reserve was drained first', () => {
+    inv.setReserveForTest('carbine', 0);
+    inv.setGodMode(true);
+    expect(inv.activeReserve).toBe(240);
+    expect(inv.activeClip).toBe(24);
+    expect(inv.isReloading).toBe(false);
+  });
+
+  it('god mode: disabling it restores the real underlying ammo state', () => {
+    inv.setReserveForTest('carbine', 5);
+    inv.setGodMode(true);
+    expect(inv.activeReserve).toBe(240);
+    inv.setGodMode(false);
+    expect(inv.activeReserve).toBe(5);
+  });
+
+  it('god mode: firing while enabled leaves the real clip untouched for when it is disabled', () => {
+    inv.setGodMode(true);
+    inv.tryFire();
+    inv.tryFire();
+    inv.setGodMode(false);
+    expect(inv.activeClip).toBe(24);
+  });
 });
