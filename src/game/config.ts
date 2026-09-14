@@ -14,6 +14,11 @@ export const ARENA = { width: 1280, height: 720 } as const;
 /** Tree anchor and player spawn. SRS 2.3. */
 export const TREE_POS = { x: 640, y: 360 } as const;
 
+/** Display size in px per growth phase (index = ArenaScene's tree.phase, 0-4). Phase 0 has no
+ * tree yet; phases 1-4 are sprout through full sapling. Delta spec's growth-ceiling mechanic
+ * (2026-09-13) doesn't change phase count. */
+export const TREE = { phaseSizes: [0, 160, 240, 320, 400] } as const;
+
 /** Aura radius before draft cards. SRS 3.2. */
 export const AURA_RADIUS_BASE = 220;
 
@@ -52,6 +57,7 @@ export const PLAYER = {
   invulnMs: 500,
   flickerHz: 12,
   radius: 20,
+  displaySize: 100,
 } as const;
 
 /** Dash. Delta spec 3. */
@@ -88,6 +94,7 @@ export const SWARMER = {
   melee: 6,
   threat: 1,
   radius: 18,
+  displaySize: 90,
 } as const;
 
 /** Universal per-enemy melee cadence. SRS 3.1 — applies to every mutant, not just the Swarmer. */
@@ -100,7 +107,7 @@ export const BRUTE = {
   melee: 20,
   threat: 4,
   ballisticReduction: 0.25,
-  displaySize: 48,
+  displaySize: 120,
 } as const;
 
 /** E-03 Bio-Detonator. SRS 4.3. */
@@ -112,7 +119,7 @@ export const DETONATOR = {
   lockRangePx: 45,
   telegraphMs: 600,
   explosionRadiusPx: 70,
-  displaySize: 40,
+  displaySize: 100,
 } as const;
 
 /** Spawn director stat ramp. SRS 5.1. Shared across every difficulty mode. */
@@ -196,12 +203,12 @@ export const CANISTER = {
   nearTreeThresholdPx: 40,
   nearTreeEjectSpeedMin: 150,
   nearTreeEjectSpeedMax: 250,
-  lifetimeMs: 15000,
-  despawnWarnMs: 4000,
+  lifetimeMs: 20000,
+  despawnWarnMs: 5000,
   despawnFlashHz: 8,
   magnetRadius: 90,
   magnetPullSpeed: 500,
-  displaySize: 24,
+  displaySize: 60,
 } as const;
 
 /** High-frequency bus events emit at 10 Hz. SRS 2.2. */
