@@ -5,11 +5,15 @@
  * simulation and mounts into #phaser-root. The two communicate only through
  * the typed event bus. SRS 2.1.
  */
+import { useState } from 'react';
 import { usePhaserGame } from './game/usePhaserGame';
+import type { DifficultyMode } from './game/config';
 import { Hud } from './hud/Hud';
+import { TitleScreen } from './hud/TitleScreen';
 
 function App() {
-  const containerRef = usePhaserGame();
+  const [mode, setMode] = useState<DifficultyMode | null>(null);
+  const containerRef = usePhaserGame(mode);
 
   return (
     <main className="flex h-full w-full items-center justify-center bg-sand-950">
@@ -17,12 +21,18 @@ function App() {
         className="relative aspect-video w-full max-w-[1280px] overflow-hidden
           border border-sand-800 bg-sand-900 shadow-2xl shadow-black/60"
       >
-        <div
-          id="phaser-root"
-          ref={containerRef}
-          className="absolute inset-0 z-10"
-        />
-        <Hud />
+        {mode === null ? (
+          <TitleScreen onSelect={setMode} />
+        ) : (
+          <>
+            <div
+              id="phaser-root"
+              ref={containerRef}
+              className="absolute inset-0 z-10"
+            />
+            <Hud />
+          </>
+        )}
       </div>
     </main>
   );
