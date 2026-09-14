@@ -51,25 +51,48 @@ export class CanisterPool {
     const canister: unknown = this.group.getFirstDead(false);
     if (!(canister instanceof Phaser.GameObjects.Image)) return;
 
+    this.#scene.tweens.killTweensOf(canister);
+
     const rest = computeCanisterRest(killX, killY, treeX, treeY, auraRadius);
 
     canister.setActive(true);
     canister.setVisible(true);
     canister.setPosition(killX, killY);
     canister.setDisplaySize(CANISTER.displaySize, CANISTER.displaySize);
+    const baseScale = canister.scaleX;
+    canister.setScale(baseScale * 1.3);
     canister.setAlpha(1);
     canister.setTint(TIER_TINT[tier]);
     canister.setData('tier', tier);
     canister.setData('spawnedAtMs', this.#scene.time.now);
     canister.setData('settled', false);
 
+    const restDurationMs = Math.max(1, rest.durationMs);
+
     this.#scene.tweens.add({
       targets: canister,
       x: rest.x,
       y: rest.y,
-      duration: Math.max(1, rest.durationMs),
+      duration: restDurationMs,
       ease: 'Quad.easeOut',
       onComplete: () => canister.setData('settled', true),
+    });
+
+    this.#scene.tweens.add({
+      targets: canister,
+      scaleX: baseScale,
+      scaleY: baseScale,
+      duration: restDurationMs,
+      ease: 'Back.easeOut',
+      onComplete: () => {
+        this.#scene.tweens.add({
+          targets: canister,
+          scaleY: baseScale * 0.8,
+          duration: 60,
+          yoyo: true,
+          ease: 'Quad.easeOut',
+        });
+      },
     });
   }
 
