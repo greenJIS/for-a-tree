@@ -27,7 +27,7 @@ export class Player {
     this.#scene = scene;
 
     this.sprite = scene.physics.add.image(x, y, 'sheet', FRAME.player);
-    this.sprite.setDisplaySize(40, 40);
+    this.sprite.setDisplaySize(PLAYER.displaySize, PLAYER.displaySize);
     this.sprite.setCollideWorldBounds(true);
     scene.physics.world.setBounds(0, 0, ARENA.width, ARENA.height);
 
@@ -112,7 +112,7 @@ export class Player {
       'sheet',
       FRAME.player,
     );
-    ghost.setDisplaySize(40, 40);
+    ghost.setDisplaySize(PLAYER.displaySize, PLAYER.displaySize);
     ghost.setRotation(this.sprite.rotation);
     ghost.setAlpha(0.4);
     this.#scene.tweens.add({
